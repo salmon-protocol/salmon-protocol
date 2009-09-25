@@ -1,0 +1,20 @@
+Have a /salmonizer?feed= endpoint that takes any existing feed and inserts salmon endpoint link in the feed.
+Posts to that endpoint which use thr:in-reply-to will link to original entry
+Provide a feed for each entry that lists its salmon -- and use PSHH to subscribe to that feed -- and insert this feed in the salmonizer
+
+
+The feedparser output for a test entry looks like this:
+
+{'feed': {}, 'encoding': 'utf-8', 'bozo': 0, 'version': 'atom10', 'namespaces': {'': u'http://www.w3.org/2005/Atom'}, 'entries': [{'updated': u'2003-12-13T18:30:02Z', 'subtitle': u'foo', 'updated_parsed': (2003, 12, 13, 18, 30, 2, 5, 347, 0), 'author': u'Joe', 'title': u'', 'content': [{'base': '', 'type': 'text/plain', 'value': u'foo', 'language': None}], 'title_detail': {'base': '', 'type': 'text/plain', 'value': u'', 'language': None}, 'href': u'http://www.abstractioneer.org/', 'author_detail': {'href': u'http://www.abstractioneer.org/', 'name': u'Joe'}, 'id': u'http://unique.com/3333'}]}
+
+So feed.namespaces gives the namespace
+feed.entries gives list of entries
+feed.entries[0] gives first one...
+e.updated gives RFC timestamp
+e.title_detail.value gives title
+e.href gives link
+e.author_detail.href, e.author_detail.name
+e.id
+
+
+

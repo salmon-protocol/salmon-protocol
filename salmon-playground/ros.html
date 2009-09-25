@@ -1,0 +1,90 @@
+<html>
+<head>
+  <title>River of Salmon</title>
+  <style type="text/css">
+    .entries {border : solid 2px #000000; padding : 4px; height : 20em; overflow : auto;} 
+    .entry { margin-bottom: .8em; }
+    .replies { margin-left: 2em; }
+    .reply { margin-bottom: 0em; }
+  </style>
+</head>
+<body>
+
+<h1><img src="/static/salmon.jpeg">River of Salmon</h1>
+<em>Shows entries and comments with recent replies across all feeds added by all users.  It's a waggregator.</em>
+
+<div id="content">
+{% if not entries %}
+No feeds in the river.  Why don't you add one below?
+{% else %}
+<h2>What's New?</h2>
+<div id="entries" class="entries">
+{% for entry in entries %}
+<div class="entry">
+  <span>
+    <strong>
+    {% if entry.link %}<a href="{{entry.link}}">{% endif %}
+    {% if entry.title %}{{entry.title}}{% else %}(untitled){% endif %}
+    {% if entry.link %}</a>{% endif %}
+    </strong>
+    at <em>{{entry.updated}}</em>
+    {% if entry.author_uri %}
+      <span>by <a href="{{entry.author_uri}}">{{entry.author_name}}</a></span>
+    {% endif %}
+    
+    &nbsp;
+    {% if entry.salmonendpoint %}<a href="/reply.do?inreplyto={{entry.entry_id}}">[reply]</a>{% endif %}
+    {% if entry.replies %}
+    <div class="replies">
+    {% for reply in entry.replies %}
+    <div>
+    {% if reply.author_uri %}
+    <span class="reply"><a href="{{reply.author_uri}}">{{reply.author_name}}</a> says: </span>
+    {% endif %}
+    &#8220;{{reply.content}}&#8221; at <em>{{reply.updated}}</em>
+    </span>
+    </div>
+    {% endfor %}
+    </div>
+    {% endif %}
+  </span>
+</div>
+{% endfor %}
+</div>
+{% endif %}
+</div>
+<div id="adder">
+<h2>Add a New Feed to the River of Salmon</h2>
+<form action="javascript:subscribe(document.getElementById('feedUri'));" method="get">
+  <p>
+  <label for="feed">Feed URL: </label>
+  <input type="text" id="feedUri" name="feed">
+  <input type="submit" value="Subscribe">
+  </p>
+</form>
+</div>
+</body>
+<script>
+var http_request = false;
+function subscribe(feedField) {
+  var feeduri = escape(feedField.value);
+  http_request = new XMLHttpRequest();
+  http_request.onreadystatechange = alertContents;
+  http_request.open('GET', "/salmonize?feed="+feeduri, true);
+  http_request.send();
+}
+
+function alertContents() {
+  if (http_request.readyState == 4) {
+      if (http_request.status == 200) {
+          window.location.reload();
+          //result = http_request.responseText;
+          //document.getElementById('myspan').innerHTML = result;            
+       } else {
+          alert('There was a problem with that URL or feed, but there are many fish in the sea; care to try another?');
+          // I should really put some kind of problem reporter in here...
+       }
+   }
+}  
+</script>
+</html>

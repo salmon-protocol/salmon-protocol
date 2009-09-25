@@ -1,0 +1,30 @@
+<html>
+<head>
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+  <title>Salmon</title>
+  <style type="text/css">
+    .salmon {border : solid 2px #000000; padding : 4px; height : 5em; overflow : auto;} 
+  </style>
+  <script type="text/javascript" charset="utf-8" src="/static/agg.js"></script>
+</head>
+<body>
+
+<h1><img src="/static/salmon.jpeg">
+Salmon Playground</h1>
+<h2>Things to see and do</h2>
+<ul>
+<li><a href="/ros">See the River of Salmon</a> - All items with their comments.</li>
+<li>
+<form action="./salmonize" method="get">
+    <label for="feed">See feed: </label>
+    <input type="text" id="feed" name="feed">
+    in Salmonized form.
+    <input type="submit" value="Go">    
+</form>
+</li>
+<li><a href="{{logouturl}}">Log in as a different user</a></li>
+</ul>
+<h2>Latest Playground Activity</h2>
+<div id="content" style="salmon"></div>
+</body>
+</html>

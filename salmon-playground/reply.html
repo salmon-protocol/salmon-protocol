@@ -1,0 +1,108 @@
+<html>
+<head>
+  <title>Reply with a Salmon</title>
+  <style type="text/css">
+    .entry { margin-bottom: .8em; }
+    .replies { margin-left: 2em; }
+    .reply { margin-bottom: 0em; }
+  </style>
+</head>
+<body>
+
+<h1><img src="/static/salmon.jpeg">Reply</h1>
+
+<div id="content">
+{% if not parent %}
+Parent entry not found!
+{% else %}
+<h2>Your reply to "<em>{{parent.title}}</em>":</h2>
+<form id="replytext"">
+<TEXTAREA id='commentText' rows=3 cols=80 onChange="javascript:updatexml(document.getElementById('commentText').value)"></TEXTAREA>
+</form>
+<h2>Copy and paste this to your local command line:</h2>
+<TEXTAREA id='cmdline' rows=18 cols=80></TEXTAREA>
+{% endif %}
+<div><form>
+  <input type="button" value="Just Post the Salmon For Me" onClick="postTheSalmon();">
+</form></div>
+<div id="log_div"></div>
+<div><a href="/ros">Back to River of Salmon</a></div>
+</body>
+<script>
+
+// The current Salmon entry in Atom/XML format:
+var salmonentry=null;
+
+// Grab user input and update the computed XML stuff:
+function updatexml(text) {
+  salmonentry = "\
+<\?xml version='1.0' encoding='UTF-8'\?>\n\
+<entry xmlns='http://www.w3.org/2005/Atom'>\n\
+  <id>{{newid}}</id>\n\
+  <author><name>{{user.nickname}}</name><uri>acct:{{user.email}}</uri></author>\n\
+  <thr:in-reply-to xmlns:thr='http://purl.org/syndication/thread/1.0'\n\
+      ref='{{parent.entry_id}}'>{{parent.entry_id}}</thr:in-reply-to>\n\
+  <content>"+text+"</content>\n\
+  <title/>\n\
+  <updated>{{timestamp}}</updated>\n\
+  <sal:signature xmlns:sal='http://salmonprotocol.org/ns/1.0'>\n\
+    {{signature}}\n\
+  </sal:signature>\n\
+</entry>";
+  
+  cmdline = "curl {{parent.salmonendpoint}} -H 'Content-Type: application/atom+xml'"
+  cmdline += " --data \""+salmonentry+"\""
+
+  document.getElementById('cmdline').value = cmdline;
+}
+
+// Just some silly JS to do cool dynamic code generation
+var textarea = document.getElementById('commentText');
+function docopy() {
+  updatexml(textarea.value); 
+}
+textarea.keyDownTimeout = null;
+textarea.onkeydown = function () {
+  if (textarea.keyDownTimeout) clearTimeout(textarea.keyDownTimeout);
+  textarea.keyDownTimeout = setTimeout(docopy, 200);
+};
+
+// Simple display / logging
+function log(s) {
+  d = document.getElementById('log_div');
+  d.innerHTML += "<div>"+s+"</div>";  
+}
+
+// Don't want to copy and paste?  Don't have curl?  OK, we'll do it for you
+var http_request = null;
+function postTheSalmon() {
+  log("<em>Sending the salmon upstream...</em>");
+  http_request = new XMLHttpRequest();
+  http_request.onreadystatechange = postTheSalmonCB;
+  http_request.open('POST', "{{parent.salmonendpoint}}", true);
+  http_request.setRequestHeader("Content-Type", "application/atom+xml");
+  http_request.setRequestHeader("Content-Length", salmonentry.length);
+  http_request.setRequestHeader("Connection", "close");
+  http_request.send(salmonentry);
+  log("POST {{parent.salmonendpoint}}<br>Content-Type: application/atom+xml<br>Content-Length: "+salmonentry.length);
+  log("<br>...(the Atom XML up above)...");
+}
+
+function postTheSalmonCB() {
+  if (http_request.readyState == 4) {
+      log("<br><em>Response:</em><br>HTTP/1.1 "+http_request.status);
+      if (http_request.status == 200) {
+          log(http_request.responseText);
+          log("<br>Success!  Go back to the River to see your salmon.");
+          //result = http_request.responseText;
+          //document.getElementById('myspan').innerHTML = result;            
+       } else {
+          alert('There was a problem with that URL or feed, but there are many fish in the sea; care to try another?');
+          // I should really put some kind of problem reporter in here...
+       }
+   }
+}
+
+updatexml("");
+</script>
+</html>
