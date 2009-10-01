@@ -31,6 +31,10 @@ USERS = {"test@example.com": True,
 "cxs@google.com": True,
 "jscudder@google.com": True,
 "bradfitz@google.com": True,
+"bobwyman@gmail.com": True,
+"bslatkin@gmail.com": True,
+"chabotc@gmail.com": True,
+"dirk.balfanz@gmail.com": True,
 }
 
 def is_registered_user(u):

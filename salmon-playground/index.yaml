@@ -10,7 +10,7 @@ indexes:
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
 
-# Used 20 times in query history.
+# Used 22 times in query history.
 - kind: Entry
   properties:
   - name: entry_id
@@ -22,14 +22,14 @@ indexes:
   - name: id
   - name: updated
 
-# Used 3 times in query history.
+# Used 5 times in query history.
 - kind: Entry
   properties:
   - name: in_reply_to
   - name: thread_updated
     direction: desc
 
-# Used 1101 times in query history.
+# Used 1151 times in query history.
 - kind: Entry
   properties:
   - name: in_reply_to
