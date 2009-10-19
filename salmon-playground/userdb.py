@@ -21,28 +21,34 @@ import sys
 import os
 import re
 
-USERS = {"test@example.com": True,
-"jpanzer@acm.org": True,
-"chabotc@google.com": True,
-"chabotc@google.com": True,
-"kurrik@google.com": True,
-"wiktorgworek@google.com": True,
-"vli@google.com": True,
-"cxs@google.com": True,
-"jscudder@google.com": True,
-"bradfitz@google.com": True,
-"bobwyman@gmail.com": True,
-"bslatkin@gmail.com": True,
-"chabotc@gmail.com": True,
-"dirk.balfanz@gmail.com": True,
-}
+from google.appengine.ext import db
+import logging
+
+class RegisteredUser(db.Model):
+  """Record for a registered user.
+  """
+  email = db.StringProperty(indexed=True)    
+
 
 def is_registered_user(u):
+  # Just let anybody play in the Playground:
+  return True
+  
   # Check for trusted domains first:
   if re.match("[a-zA-Z\+_]+@google.com",u.email()):
     return True
 
-  if u.email() in USERS:
-    return True	
+  # Next check email address against DB:
+  result = RegisteredUser.gql('WHERE email = :1',u.email()).fetch(1)
+
+  logging.info("Saw result: %s",result)
+  # Did we find the user?  OK, they're in:
+  if result:
+    return True
 
   return False
+
+def add_registered_user(email):
+  u = RegisteredUser(email=email)
+  u.put()
+  

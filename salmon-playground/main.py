@@ -31,8 +31,11 @@ from google.appengine.api import users
 import feedparser
 import userdb
 
+from oauth import OAuthDanceHandler, OAuthHandler, requiresOAuth
+
 #Data model
 import model
+import bloggerproxy
 from model import Entry
 from signatures import *
 
@@ -73,6 +76,7 @@ class SalmonizeHandler(webapp.RequestHandler):
 
     # TODO: Have an alternate template that just shows the Atom with the salmon stuff highlighted in some way.
     self.response.out.write(template.render('atom.xml', data))
+    self.response.out.set_header("Content-Type","application/atom+xml; charset=utf-8")
     self.response.set_status(200)
     
     # And store the entries discovered in our own DB for reference.
@@ -140,16 +144,69 @@ class InputHandler(webapp.RequestHandler):
     self.response.set_status(200)
     self.response.out.write("Salmon accepted, swimming upstream!\n");
 
+class CreateProxyHandler(OAuthHandler):
+  """Displays a configuration page to create a proxy salmonized feed."""
+
+  @aclRequired
+  def get(self):
+    context = { 'logged': self.client.has_access_token() }
+
+    if context['logged']:
+      logging.info("before OAuth token = %s", self.client.blogger.token_store.find_token("htp://www.blogger.com/feeds/default/blogs"))
+      feed = self.client.blogger.GetBlogFeed()
+      blogs = []
+      for entry in feed.entry:
+        blogs.append({
+          'id': entry.GetBlogId(),
+          'title': entry.title.text,
+          'link': entry.GetHtmlLink().href,
+          'published': entry.published.text,
+          'updated': entry.updated.text,
+        })
+      context['blogs'] = blogs
+      
+    logging.info("token_store = %s",self.client.blogger.token_store)
+    logging.info("OAuth token = %s", self.client.blogger.token_store.find_token("http://www.blogger.com/feeds/"))
+
+    self.response.out.write(template.render('setup_proxy.html', context))
+
+class SalmonizeBlogHandler(OAuthHandler):
+  """Handles XHR request to salmonize a particular blog"""
+  
+  @aclRequired
+  def post(self):
+    logging.info('Inside SalmonizeBlogHandler')
+    logging.info('Saw body: %s\n',self.request.body.decode('utf-8'))
+    blogid = self.request.get('id')
+    feeduri = self.request.get('feed')
+    # Take blogid, feed, and OAuth token and squirrel them away for
+    # later use.  Create a proxy URL for the feed that maps to
+    # this salmonized feed, and return it.
+    logging.info("In SalmonizeBlogHandler, OAuth token = %s", self.client.blogger.token_store.find_token("http://www.blogger.com/feeds/"))
+    
+    # Retrieve OAuth token stored by the current user, and cache it away for later use
+    # when posting comments (only).  Wish we had a way to tell the server we want to restrict
+    # the token to certain operations only, it'd be safer.
+    oauth_token = self.client.blogger.token_store.find_token("http://www.blogger.com/feeds/")
+    logging.info('Saw blogid=%s, feeduri=%s, OAuth token=%s',blogid,feeduri,oauth_token)
+    bloggerproxy.addBlogProxy(blogid,feeduri,oauth_token,
+        'http://'+self.request.headers['Host']+'/blogproxy?id='+blogid,
+        self.client)
+    
+    # Finally, add the blog to the test aggregator (River of Salmon):
+    
+    self.response.set_status(200)
+
 class RiverHandler(webapp.RequestHandler):
   """Displays a very simple river of Salmon aggregator."""
   
   @aclRequired
   def get(self):
+    bloggerproxy.crawlProxiedFeeds()
     N = 500
     context = dict(entries=model.getLatestPosts(N))
     if context['entries']:
       for entry in context['entries']:
-        #logging.info("Entry = %s",dumper.dump(entry))
         replies = model.getRepliesTo(entry,N)
         if replies:
           entry.replies = replies
@@ -188,6 +245,22 @@ class LatestHandler(webapp.RequestHandler):
                     'in_reply_to': salmon.in_reply_to})
     self.response.out.write(template.render('latest.html',dict(salmon=stuff))) 
 
+class AddUserHandler(webapp.RequestHandler):
+  """Adds a registered user w/param email, iff current user is an admin.."""
+
+  @aclRequired
+  def get(self):
+    if users.is_current_user_admin():
+      e = self.request.get('email')
+      if e:
+        userdb.add_registered_user(e)
+        self.response.out.write("Added "+e+" to registered users!")
+        self.response.set_status(200)
+        return
+    
+    self.response.out.write("Access DENIED!")
+    self.response.set_status(400)
+
 class MainHandler(webapp.RequestHandler):
   """Main page of the server."""
   
@@ -203,9 +276,14 @@ application = webapp.WSGIApplication(
     (r'/salmonize', SalmonizeHandler),
     (r'/post', InputHandler),
     (r'/latest', LatestHandler),
+    (r'/setup_proxy', CreateProxyHandler),
+    (r'/salmonize_blog', SalmonizeBlogHandler),
     (r'/ros', RiverHandler),
     (r'/reply.do', ReplyHandler),
+    (r'/adduser', AddUserHandler),
     (r'/', MainHandler),
+    (r'/oauth/(.*)', OAuthDanceHandler),
+    (r'/blogproxy', bloggerproxy.BlogProxyHandler),
   ],
   debug=True)
 
