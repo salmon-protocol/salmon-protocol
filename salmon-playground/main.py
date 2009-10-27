@@ -68,15 +68,22 @@ class SalmonizeHandler(webapp.RequestHandler):
     feedurl = self.request.get('feed')
     data = feedparser.parse(feedurl)
     
-    # Augment with a salmon endpoint. TODO: Don't overwrite existing!
-    endpoint = u'http://'+self.request.headers['Host']+'/post'
-    data.feed.links.append({'href' : endpoint,'type': u'application/atom+xml', 'rel': u'salmon'})
+    # Augment with a salmon endpoint. Don't overwrite existing!
+    foundsalmon = False
+    for link in data.feed.links:
+      if link.rel.lower() == 'salmon':
+        foundsalmon = True
+        break
+    if foundsalmon == False:        
+      endpoint = u'http://'+self.request.headers['Host']+'/post'
+      data.feed.links.append({'href' : endpoint,'type': u'application/atom+xml', 'rel': u'salmon'})
+      
     # if feedfields.bozo:
     # TODO: Annotate stored data and/or hand back a warning.
 
     # TODO: Have an alternate template that just shows the Atom with the salmon stuff highlighted in some way.
     self.response.out.write(template.render('atom.xml', data))
-    self.response.out.set_header("Content-Type","application/atom+xml; charset=utf-8")
+    self.response.headers.add_header("Content-Type","application/atom+xml; charset=utf-8")
     self.response.set_status(200)
     
     # And store the entries discovered in our own DB for reference.
