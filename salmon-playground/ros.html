@@ -54,11 +54,16 @@ No feeds in the river.  Why don't you add one below?
         <div class="replies">
             {% for reply in entry.replies %}
             <div>
-                {% if reply.author_uri %}
-                <span class="reply"><a href="{{reply.author_uri}}">{{reply.author_name}}</a> says: </span>
+                {% if reply.author_uri and reply.author_name %}
+                <span class="reply">
+                  <a href="{{reply.author_uri}}">{{reply.author_name}}</a> says: 
                 {% endif %}
-            &#8220;{{reply.content}}&#8221; at <em>{{reply.updated}}</em>
-            </span>
+                {% if not reply.author_uri and reply.author_name %}
+                <span class="reply">
+                  <em>{{reply.author_name}}</em> says:
+                {% endif %}
+              &#8220;{{reply.content|striptags}}&#8221; at <em>{{reply.updated}}</em>
+              </span>
             </div>
             {% endfor %}
         </div>
