@@ -86,6 +86,9 @@ class SalmonizeHandler(webapp.RequestHandler):
     self.response.headers.add_header("Content-Type","application/atom+xml; charset=utf-8")
     self.response.set_status(200)
     
+    # Add a fake BlogProxy entry so that we can fetch updated comments for this feed.
+    bloggerproxy.addNonBloggerBlogProxy(feedurl)
+    
     # And store the entries discovered in our own DB for reference.
     for entry in data.entries:
       e = model.makeEntry(entry,data.feed)

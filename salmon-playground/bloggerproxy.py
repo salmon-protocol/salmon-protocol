@@ -183,6 +183,16 @@ def addBlogProxy(blog_id,feed_uri,oauth_access_token,proxy_url,client):
   
   # Now update the original blog to redirect to the proxy:
   modifyBlogRedirectUrl(blog_id,proxy_url,client)
+  
+def addNonBloggerBlogProxy(feed_uri):
+  # First clear out any existing proxy entries with this uri:
+  existing = BlogProxy.all().filter("blog_id = ",feed_uri).fetch(100)
+  db.delete(existing)
+  
+  bp = BlogProxy(blog_id=feed_uri,
+                 feed_uri=feed_uri,
+                 proxy_url=feed_uri)
+  bp.put()
 
 def crawlFeedAndComments(feedurl,data,hacked_in_reply_to_override=None):
   """Crawl a single feed and all comments on its entries, recursively"""
