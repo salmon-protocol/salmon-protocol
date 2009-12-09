@@ -232,8 +232,13 @@ class ReplyHandler(webapp.RequestHandler):
     context['newid'] = "tag:example.com,2009:cmt-%.8f" % random.random();
     u = users.get_current_user();
     context['user'] = dict(nickname=u.nickname(), email=u.email())
-    context['signature'] = genSignature(context['newid'],context['parent'].entry_id,'','acct'+u.email())
     context['timestamp'] = datetime.datetime.utcnow().isoformat()
+    
+    # Sign the buffer (XML):
+    sig = genSignature(template.render('reply.html', context))
+
+    # Add signature to XML & write out augmented XML:
+    context['signature'] = sig
     self.response.out.write(template.render('reply.html', context))
 
 class LatestHandler(webapp.RequestHandler):

@@ -10,46 +10,39 @@ indexes:
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
 
-# Used once in query history.
 - kind: Entry
   properties:
   - name: entry_id
   - name: updated
 
-# Unused in query history -- copied from input.
 - kind: Entry
   properties:
   - name: id
   - name: updated
 
-# Used 2 times in query history.
 - kind: Entry
   properties:
   - name: in_reply_to
   - name: thread_updated
     direction: desc
 
-# Used once in query history.
 - kind: Entry
   properties:
   - name: in_reply_to
   - name: updated
 
-# Unused in query history -- copied from input.
 - kind: Entry
   properties:
   - name: in_reply_to
   - name: updated
     direction: desc
 
-# Unused in query history -- copied from input.
 - kind: RegisteredUser
   properties:
   - name: email
   - name: thread_updated
     direction: desc
 
-# Unused in query history -- copied from input.
 - kind: Salmon
   properties:
   - name: in_reply_to
