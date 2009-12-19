@@ -1,0 +1,81 @@
+<html>
+<head>
+  <title>Magic Sig Demo</title>
+  <link type="text/css" rel="stylesheet" href="/static/setup_proxy.css"/>
+  <style type="text/css">
+    .entry { margin-bottom: .8em; }
+    .replies { margin-left: 2em; }
+    .reply { margin-bottom: 0em; }
+  </style>
+  <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"></script>
+</head>
+<body>
+
+<div id="header">
+  <div class="right"><a href="/oauth/revoke_token">logout</a></div>
+  <div class="left"><img src="/static/salmon.jpeg" style="float:left"> Magic Signature Demo</div>
+  <div id="status" class="hidden"><span class="text">blah blah</span></div>
+</div>
+
+<div id="content">
+    <form id="salmon">
+      <TEXTAREA id='salmonText' rows=15 cols=80 onChange="javascript:updatexml(document.getElementById('salmonText').value)">
+      </TEXTAREA>
+      <TEXTAREA id='signedSalmon' rows=15 cols=80></TEXTAREA>
+    </form>
+</div>
+<script>
+
+// The current Salmon entry in Atom/XML format:
+var salmonentry=null;
+
+// Grab user input and update the computed XML stuff:
+function updatexml(text) {
+  salmonentry = text;
+  $.ajax({
+    type: "POST",
+    url: "/magicsigdemo",
+    data: "data="+escape(text),
+    success: function(response){
+      document.getElementById('signedSalmon').value = response; 
+      showStatus("Received signed Salmon from server!");
+    },
+  });
+  document.getElementById('signedSalmon').value = "Signing...";
+  showStatus("Sent request to sign...");
+}
+
+// Just some silly JS to do cool dynamic code generation
+var textarea = document.getElementById('salmonText');
+function docopy() {
+  updatexml(textarea.value); 
+}
+textarea.keyDownTimeout = null;
+textarea.onkeydown = function () {
+  if (textarea.keyDownTimeout) clearTimeout(textarea.keyDownTimeout);
+  textarea.keyDownTimeout = setTimeout(docopy, 200);
+};
+
+// Simple display / logging
+function log(s) {
+  showStatus(s)  
+}
+
+updatexml("");
+
+function showStatus(msg) {
+  $('#status span.text').text(msg);
+  $('#status').fadeIn();
+}
+
+function hideStatus() {
+  $('#status').fadeOut();
+}
+
+function showStatusAndHideAfterFiveSecs(msg) {
+  showStatus(msg);
+  setTimeout(hideStatus, 5000);
+}
+</script>
+</body>
+</html>

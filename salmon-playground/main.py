@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2008 Google Inc.
+# Copyright 2009 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,28 +33,16 @@ import userdb
 
 from oauth import OAuthDanceHandler, OAuthHandler, requiresOAuth
 
+# Demos
+import magicsig
+
 #Data model
 import model
 import bloggerproxy
 from model import Entry
 from signatures import *
 
-
-""" Helpers """
-def aclRequired(func):
-  def wrapper(self, *args, **kw):
-    user = users.get_current_user()
-    if not user:
-      self.redirect(users.create_login_url(self.request.uri))
-    else:
-      if not (users.is_current_user_admin() or userdb.is_registered_user(user)):
-        self.response.out.write("Sorry "+user.email()+", you are not on my allowed list.  Talk to John if you want to be added.")
-        self.response.out.write("<br><a href=\""+users.create_logout_url(self.request.uri)+"\">logout</a>");
-        self.response.set_status(403)
-      else:
-        func(self, *args, **kw)
-  return wrapper
-
+from utils import *
 
 class SalmonizeHandler(webapp.RequestHandler):
   """Handles request to salmonize an external feed.
@@ -299,6 +287,7 @@ application = webapp.WSGIApplication(
     (r'/', MainHandler),
     (r'/oauth/(.*)', OAuthDanceHandler),
     (r'/blogproxy', bloggerproxy.BlogProxyHandler),
+    (r'/magicsigdemo', magicsig.SignThisHandler),
   ],
   debug=True)
 

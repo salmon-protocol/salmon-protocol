@@ -125,20 +125,53 @@ class Signer_RSA_SHA1:
     return base64.b64encode(signature_bytes)
 
 # Data format notes:
-# <mpd:envelope>
+# The basic idea is to wrap the content to be signed inside an "envelope"
+# that allows the content to be passed through various systems un-munged.
+# To this end, we construct an application/magic-envelope content type
+# that can be used as-is or as part of other building blocks.  There
+# are XML and JSON variants:
+
+# Content-Type: application/magic-signed+xml
+# <me:signed xmlns:me="http://salmon-protocol.org/ns/magic-signed">
 #   <data type="application/atom+xml">B</data>
 #   <alg>RSA-SHA1</alg>
 #   <sig>S</sig>
-# <mpd:envelope>
+#   <signer>acct:bob@example.org></signer>
+# <me:signed>
 
-# Content-Type: application/mpd-envelope+xml
-# (as above)
-
-# Content-Type: application/mpd-envelope+json
+# Content-Type: application/magic-envelope+json
 # [
 #   {"data" : B},
 #   {"data-type": "application/json"},
 #   {"alg": "RSA-SHA1"},
 #   {"sig": S},
+#   {"signer": "acct:bob@example.org"}
 # ]
   
+# Content-Type: application/atom+xml
+# <entry>
+#   <id>some id</id>
+#   <title>some title</title>
+#   <author><url>acct:bob@example.org</url></author>
+#   <updated>some timestamp</updated>
+#   <content>possibly modified content goes here</content>
+#   <me:signed>
+#     <data type="application/atom+xml">B</data>
+#     <alg>RSA-SHA1</alg>
+#     <sig>S</sig>
+#     <signer>acct:bob@example.org></signer>
+#   <me:signed>
+# </entry>
+
+# The Atom form is for use with legacy processors that do not understand 
+# application/magic-envelope, or to expose data to a mixed audience
+# of processers some of whom understand magic-envelope and some of whom
+# cannot.  The bare form is preferred for brevity, simplicity, and security
+# wherever possible.  It is legal and possible to create a <feed> which
+# contains <me:signed-entry> elements.  It is even useful.
+
+# To turn a signed-entry into an Atom entry for processing involves a simple
+# intermediate step: entry = xml_parse(base64decode(signed-entry.data)).  
+# Verifying that the signature is valid is more complicated of course.
+
+
