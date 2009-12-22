@@ -18,50 +18,91 @@
 </div>
 
 <div id="content">
-    <form id="salmon">
-      <TEXTAREA id='salmonText' rows=15 cols=80 onChange="javascript:updatexml(document.getElementById('salmonText').value)">
-      </TEXTAREA>
-      <TEXTAREA id='signedSalmon' rows=15 cols=80></TEXTAREA>
-    </form>
+  <p>Input an (unsigned) Atom-formatted salmon:</p>
+  <form id="salmon">
+    <TEXTAREA id='salmonText' rows=12 cols=120 onChange="javascript:updatexml(document.getElementById('salmonText').value)">
+&lt;?xml version=&#39;1.0&#39; encoding=&#39;UTF-8&#39;?&gt;
+&lt;entry xmlns=&#39;http://www.w3.org/2005/Atom&#39;&gt;
+  &lt;id&gt;tag:example.com,2009:cmt-0.44775718&lt;/id&gt;  
+  &lt;author&gt;&lt;name&gt;test@example.com&lt;/name&gt;&lt;uri&gt;acct:test@example.com&lt;/uri&gt;&lt;/author&gt;
+  &lt;thr:in-reply-to xmlns:thr=&#39;http://purl.org/syndication/thread/1.0&#39;
+      ref=&#39;tag:blogger.com,1999:blog-893591374313312737.post-3861663258538857954&#39;&gt;tag:blogger.com,1999:blog-893591374313312737.post-3861663258538857954
+  &lt;/thr:in-reply-to&gt;
+  &lt;content&gt;Salmon swim upstream!&lt;/content&gt;
+  &lt;title&gt;Salmon swim upstream!&lt;/title&gt;
+  &lt;updated&gt;2009-12-18T20:04:03Z&lt;/updated&gt;
+&lt;/entry&gt;
+    </TEXTAREA>
+  </form>
+</div>
+<div>
+  <p>The application/magic-envelope format (to be sent upstream):</p>
+  <TEXTAREA id='envelope' rows=6 cols=120></TEXTAREA>
+  <a title="Send salmon to server to verify signature" href="javascript:verifyxml(document.getElementById('envelope').value)">Verify signature</a>
+</div>
+<div>
+  <p>The application/atom format (to be used for re-syndication):</p>
+  <TEXTAREA id='signedAtom' rows=6 cols=120></TEXTAREA>
+  <a title="Send salmon to server to verify signature" href="javascript:verifyxml(document.getElementById('signedAtom').value)">Verify signature</a>
 </div>
 <script>
 
-// The current Salmon entry in Atom/XML format:
-var salmonentry=null;
-
 // Grab user input and update the computed XML stuff:
 function updatexml(text) {
-  salmonentry = text;
+  showStatus("Signing...");
   $.ajax({
     type: "POST",
-    url: "/magicsigdemo",
+    url: "/magicsigdemo?format=magic-envelope",
     data: "data="+escape(text),
     success: function(response){
-      document.getElementById('signedSalmon').value = response; 
-      showStatus("Received signed Salmon from server!");
+      document.getElementById('envelope').value = response; 
+      showStatusAndHideAfterFiveSecs("Received signed magic envelope from server.");
     },
   });
-  document.getElementById('signedSalmon').value = "Signing...";
-  showStatus("Sent request to sign...");
+
+  $.ajax({
+    type: "POST",
+    url: "/magicsigdemo?format=atom",
+    data: "data="+escape(text),
+    success: function(response){
+      document.getElementById('signedAtom').value = response; 
+      showStatusAndHideAfterFiveSecs("Received signed Atom format from server.");
+    },
+  });
 }
 
+// Verify a (signed) Salmon and return yes or no:
+function verifyxml(text) {
+  showStatus("Verifying...")
+  $.ajax({
+    type: "POST",
+    url: "/magicsigdemoverify",
+    data: "data="+escape(text),
+    success: function(response){
+      if (response == "OK") {
+        showStatusAndHideAfterFiveSecs("Salmon signature verified!");
+      } else {
+        showStatusAndHideAfterFiveSecs("Oops: "+response);
+      }
+    }
+  });
+}
+  
 // Just some silly JS to do cool dynamic code generation
 var textarea = document.getElementById('salmonText');
-function docopy() {
+function dosignature() {
   updatexml(textarea.value); 
 }
 textarea.keyDownTimeout = null;
 textarea.onkeydown = function () {
   if (textarea.keyDownTimeout) clearTimeout(textarea.keyDownTimeout);
-  textarea.keyDownTimeout = setTimeout(docopy, 200);
+  textarea.keyDownTimeout = setTimeout(dosignature, 200);
 };
 
 // Simple display / logging
 function log(s) {
   showStatus(s)  
 }
-
-updatexml("");
 
 function showStatus(msg) {
   $('#status span.text').text(msg);
@@ -76,6 +117,8 @@ function showStatusAndHideAfterFiveSecs(msg) {
   showStatus(msg);
   setTimeout(hideStatus, 5000);
 }
+
+dosignature()
 </script>
 </body>
 </html>

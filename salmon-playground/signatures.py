@@ -98,9 +98,10 @@ class Validator_RSA_SHA1:
     local_hash = hashlib.sha1(signed_bytes).digest()
       
     try:
-      remote_signature = base64.decodestring(signature_b64)
+      remote_signature = base64.urlsafe_b64decode(signature_b64.encode("utf-8"))
       remote_hash = self.public_key.encrypt(remote_signature, '')[0][-20:]
-    except:
+    except Exception, err:
+      logging.exception('Error encrypting remote signature:')
       return False
       
     return local_hash == remote_hash
@@ -122,7 +123,7 @@ class Signer_RSA_SHA1:
     signature_bytes = self.privatekey.hashAndSign(bytes_to_sign)
 
     # Return signature base64-encoded
-    return base64.b64encode(signature_bytes)
+    return base64.urlsafe_b64encode(signature_bytes)
 
 # Data format notes:
 # The basic idea is to wrap the content to be signed inside an "envelope"

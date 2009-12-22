@@ -288,6 +288,7 @@ application = webapp.WSGIApplication(
     (r'/oauth/(.*)', OAuthDanceHandler),
     (r'/blogproxy', bloggerproxy.BlogProxyHandler),
     (r'/magicsigdemo', magicsig.SignThisHandler),
+    (r'/magicsigdemoverify', magicsig.VerifyThisHandler)
   ],
   debug=True)
 
