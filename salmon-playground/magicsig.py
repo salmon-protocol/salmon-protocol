@@ -160,7 +160,9 @@ def unfoldMagicEnv(env):
   """Unfolds a magic envelope inside-out into (typically) an
      Atom Entry with an env:provenance extension element 
      for tracking the original magic signature."""
-  d = parseString(base64.urlsafe_b64decode(env['data']))
+  logging.info("In unfoldMagicEnv, env[data] = \n%s\n",env['data'])
+
+  d = parseString(base64.urlsafe_b64decode(env['data'].encode("utf-8")))
   assert d.documentElement.tagName == "entry"
 
   # Create a provenance and add it in.  Note that support
@@ -217,15 +219,26 @@ class SignThisHandler(webapp.RequestHandler):
 
   @aclRequired
   def post(self):
-    """Handles posting back of data and returns a result via XHR."""
+    """Handles posting back of data and returns a result via XHR.
+       Just for demo purposes.  Accepts either data (an XML document)
+       or env (a magic envelope) and returns output of magic-envelope
+       or atom depending on format parameter."""
+
     # TODO: Verify that current user session matches author of content, or throw error.
     data = self.request.get('data')
+    envText = self.request.get('env')
     format = self.request.get('format') or 'magic-envelope'
-    logging.info('data = %s\n',data)
-    env = createMagicEnv(data)
-    assert(verifyMagicEnv(env))
-    #logging.info('Created env = %s\n',env)
-    logging.info("Created env! data:\n%s\nand signature:\n%s\n",env['data'],env['sig'])
+    if data:  
+      logging.info('posted Atom data = %s\n',data)
+      env = createMagicEnv(data)
+    elif envText:
+      logging.info('posted Magic envelope env = %s\n',envText)
+      env = parseMagicEnv(envText)
+
+    # Just to sanity check:
+    assert verifyMagicEnv(env)
+
+    #logging.info("Created env! data:\n%s\nand signature:\n%s\n",env['data'],env['sig'])
 
     self.response.set_status(200) # The default
     if format == 'magic-envelope':

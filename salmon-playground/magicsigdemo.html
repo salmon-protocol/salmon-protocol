@@ -37,13 +37,14 @@
 </div>
 <div>
   <p>The application/magic-envelope format (to be sent upstream):</p>
+  <a title="Unfold magic envelope into signed Atom" href="javascript:unfoldatomxml($('#envelope').val())">Unfold into Atom</a> |
+  <a title="Send salmon to server to verify signature" href="javascript:verifyxml($('#envelope').val())">Verify signature</a><BR>
   <TEXTAREA id='envelope' rows=6 cols=120></TEXTAREA>
-  <a title="Send salmon to server to verify signature" href="javascript:verifyxml(document.getElementById('envelope').value)">Verify signature</a>
 </div>
-<div>
+<div id="output">
   <p>The application/atom format (to be used for re-syndication):</p>
+  <a title="Send salmon to server to verify signature" href="javascript:verifyxml($('#signedAtom').val())">Verify signature</a><BR>
   <TEXTAREA id='signedAtom' rows=6 cols=120></TEXTAREA>
-  <a title="Send salmon to server to verify signature" href="javascript:verifyxml(document.getElementById('signedAtom').value)">Verify signature</a>
 </div>
 <script>
 
@@ -55,18 +56,24 @@ function updatexml(text) {
     url: "/magicsigdemo?format=magic-envelope",
     data: "data="+escape(text),
     success: function(response){
-      document.getElementById('envelope').value = response; 
+      $('#envelope').val(response); 
+      $('#output').fadeOut();
+      $('#signedAtom').val('')
       showStatusAndHideAfterFiveSecs("Received signed magic envelope from server.");
     },
   });
+}
 
+function unfoldatomxml(text) {
+  showStatus("Unfolding envelope...");
   $.ajax({
     type: "POST",
     url: "/magicsigdemo?format=atom",
-    data: "data="+escape(text),
+    data: "env="+escape(text),
     success: function(response){
-      document.getElementById('signedAtom').value = response; 
-      showStatusAndHideAfterFiveSecs("Received signed Atom format from server.");
+      $('#signedAtom').val(response); 
+      $('#output').fadeIn();
+      showStatusAndHideAfterFiveSecs("Unfolded envelope into signed Atom");
     },
   });
 }
