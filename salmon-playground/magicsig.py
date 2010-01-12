@@ -44,36 +44,13 @@ import base64
 import signatures
 
 
-# Just for bootstrapping, use test key:
+# Just for bootstrapping, use test keypair:
 
-the_private_cert = """
------BEGIN PRIVATE KEY-----
-MIICdgIBADANBgkqhkiG9w0BAQEFAASCAmAwggJcAgEAAoGBALRiMLAh9iimur8V
-A7qVvdqxevEuUkW4K+2KdMXmnQbG9Aa7k7eBjK1S+0LYmVjPKlJGNXHDGuy5Fw/d
-7rjVJ0BLB+ubPK8iA/Tw3hLQgXMRRGRXXCn8ikfuQfjUS1uZSatdLB81mydBETlJ
-hI6GH4twrbDJCR2Bwy/XWXgqgGRzAgMBAAECgYBYWVtleUzavkbrPjy0T5FMou8H
-X9u2AC2ry8vD/l7cqedtwMPp9k7TubgNFo+NGvKsl2ynyprOZR1xjQ7WgrgVB+mm
-uScOM/5HVceFuGRDhYTCObE+y1kxRloNYXnx3ei1zbeYLPCHdhxRYW7T0qcynNmw
-rn05/KO2RLjgQNalsQJBANeA3Q4Nugqy4QBUCEC09SqylT2K9FrrItqL2QKc9v0Z
-zO2uwllCbg0dwpVuYPYXYvikNHHg+aCWF+VXsb9rpPsCQQDWR9TT4ORdzoj+Nccn
-qkMsDmzt0EfNaAOwHOmVJ2RVBspPcxt5iN4HI7HNeG6U5YsFBb+/GZbgfBT3kpNG
-WPTpAkBI+gFhjfJvRw38n3g/+UeAkwMI2TJQS4n8+hid0uus3/zOjDySH3XHCUno
-cn1xOJAyZODBo47E+67R4jV1/gzbAkEAklJaspRPXP877NssM5nAZMU0/O/NGCZ+
-3jPgDUno6WbJn5cqm8MqWhW1xGkImgRk+fkDBquiq4gPiT898jusgQJAd5Zrr6Q8
-AO/0isr/3aa6O6NLQxISLKcPDk2NOccAfS/xOtfOz4sJYM3+Bs4Io9+dZGSDCA54
-Lw03eHTNQghS0A==
------END PRIVATE KEY-----
-"""
+the_test_keypair = "mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww==.AQAB.Lgy_yL3hsLBngkFdDw1Jy9TmSRMiH6yihYetQ8jy-jZXdsZXd8V5ub3kuBHHk4M39i3TduIkcrjcsiWQb77D8Q=="
 
-the_public_key = ("0xB46230B021F628A6BABF1503BA95BDDAB17AF12" +
-                    "E5245B82BED8A74C5E69D06C6F406BB93B7818CAD" +
-                    "52FB42D89958CF2A52463571C31AECB9170FDDEEB" +
-                    "8D527404B07EB9B3CAF2203F4F0DE12D081731144" +
-                    "64575C29FC8A47EE41F8D44B5B9949AB5D2C1F359" +
-                    "B2741113949848E861F8B70ADB0C9091D81C32FD7" +
-                    "59782A806473")
+the_test_publickey = "mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww==.AQAB"
 
-def createMagicEnv(text):
+def createMagicEnv(text, userid):
   """Creates a magic envelope based on input text & current user.
      
   Note the importance of using the url-safe variant of base64
@@ -83,8 +60,10 @@ def createMagicEnv(text):
   instead of '/'.
   """
 
+  assert checkAuthorship(text, userid)
+
   # TODO: Get the private cert based on verifiable chain of evidence
-  signer = signatures.Signer_RSA_SHA1(the_private_cert)
+  signer = signatures.Signer_RSA_SHA1(the_test_keypair)
   B = base64.urlsafe_b64encode(unicode(text).encode("utf-8")).encode("utf-8")
 
   return dict(
@@ -94,17 +73,50 @@ def createMagicEnv(text):
     alg = signer.get_name(),
   )
 
+def normalizeUserIdToUri(userid):
+  """Normalizes a user-provided user id to a reasonable guess at a URI."""
+
+  userid = strip(userid)
+
+  # If already in a URI form, we're done:
+  if userid.startswith("http:") or userid.startswith("https:") or userid.startswith("acct:"):
+    return userid
+
+  if userid.find("@") > 0:
+    return "acct:"+userid
+
+  # Catchall:  Guess at http: if nothing else works.
+  return "http://"+userid
+  
+
+def checkAuthorship(text, userid):
+  """Checks that userid is identified as an author of the content."""
+
+  userid = normalizeUserIdToUri(userid)
+
+  d = parseString(text)
+  if d.documentElement.tagName == "entry":
+    authors = d.documentElement.getElementsByTagName("author")
+    for a in authors:
+      uris = a.getElementsByTagName("uri")
+      for uri in uris:
+        logging.info("Saw author uri: %s\n", uri.firstChild.data)
+        if uri.firstChild.data == userid:
+          return True
+
+  return False
+
 def verifyMagicEnv(env):
   """Verifies a magic envelope (checks that its signature matches the
      contents)."""
 
   assert env['alg'] == "RSA-SHA1"
   assert env['encoding'] == "base64"
-  validator = signatures.Validator_RSA_SHA1(the_public_key)
+  verifier = signatures.Verifier_RSA_SHA1(the_test_publickey)
 
   logging.info("Verifying data:\n%s\n versus signature:\n%s\n",env['data'],env['sig'])
 
-  return validator.validate(env['data'],env['sig'])
+  return verifier.verify(env['data'],env['sig'])
 
 
 # TODO: Move this
@@ -131,14 +143,6 @@ def parseMagicEnv(textinput):
   else:
     logging.error('Unknown input format; root element tag is %s\n',d.documentElement.tagName)
     raise unicode("Unrecognized input format")
-
-  #for c in envEl.childNodes:
-  #  logging.info('Child node: %s\n',c)
-  #t = getSingleElementByTagNameNS(envEl,NS,'me:data')
-  #for c in t.childNodes:
-  #  logging.info('Child node of me:data: %s\n',c)
-  #
-  #logging.info('First child: %s\n',t.firstChild);
 
   logging.info('envEl = %s\n',envEl)
 
@@ -230,7 +234,17 @@ class SignThisHandler(webapp.RequestHandler):
     format = self.request.get('format') or 'magic-envelope'
     if data:  
       logging.info('posted Atom data = %s\n',data)
-      env = createMagicEnv(data)
+      userid = users.get_current_user().email();
+
+      # Do an ACL check to see if current user is properly identified as an author:
+      if not checkAuthorship(data, userid):
+        logging.info("Authorship check failed for user %s\n",userid)
+        self.response.set_status(400)
+        self.response.out.write("User "+userid+" not an author of entry, cannot sign.")
+        return
+
+      # Sign the content on behalf of user:
+      env = createMagicEnv(data,userid)
     elif envText:
       logging.info('posted Magic envelope env = %s\n',envText)
       env = parseMagicEnv(envText)
@@ -275,7 +289,8 @@ class VerifyThisHandler(webapp.RequestHandler):
       self.response.out.write("OK")
       logging.info("Salmon signature verified!")
     else:
-      self.response.out.write("Error: Signature does not validate.")
+      self.response.set_status(400) # Input error (does not validate)
+      self.response.out.write("Signature does not validate.")
       logging.info("Salmon signature verification FAILED")
 
 if __name__ == '__main__':

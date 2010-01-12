@@ -28,8 +28,12 @@ handlers:
 - url: /salmonize
   script: main.py
 
+- url: /test.*
+  script: gaeunit.py
+
 - url: .*
   script: main.py
   login: required
+
   
 

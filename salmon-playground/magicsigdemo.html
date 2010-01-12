@@ -48,9 +48,10 @@
 </div>
 <script>
 
-// Grab user input and update the computed XML stuff:
+// Grab user input and create a signed magic envelope from it:
 function updatexml(text) {
   showStatus("Signing...");
+  $('#envelope').val('working...');
   $.ajax({
     type: "POST",
     url: "/magicsigdemo?format=magic-envelope",
@@ -59,11 +60,15 @@ function updatexml(text) {
       $('#envelope').val(response); 
       $('#output').fadeOut();
       $('#signedAtom').val('')
-      showStatusAndHideAfterFiveSecs("Received signed magic envelope from server.");
+      showStatusAndHideAfterFiveSecs("Updated the signed magic envelope.");
+    },
+    error: function(xhr, statusText, errorThrown){
+      showStatus("Error "+xhr.status+": "+xhr.responseText);
     },
   });
 }
 
+// Unfold a magic envelope into an Atom entry with provenance:
 function unfoldatomxml(text) {
   showStatus("Unfolding envelope...");
   $.ajax({
@@ -74,6 +79,9 @@ function unfoldatomxml(text) {
       $('#signedAtom').val(response); 
       $('#output').fadeIn();
       showStatusAndHideAfterFiveSecs("Unfolded envelope into signed Atom");
+    },
+    error: function(xhr, statusText, errorThrown){
+      showStatus("Error "+xhr.status+": "+xhr.responseText);
     },
   });
 }
@@ -91,7 +99,10 @@ function verifyxml(text) {
       } else {
         showStatusAndHideAfterFiveSecs("Oops: "+response);
       }
-    }
+    },
+    error: function(xhr, statusText, errorThrown){
+      showStatus("Error "+xhr.status+": "+xhr.responseText);
+    },
   });
 }
   
@@ -106,26 +117,28 @@ textarea.onkeydown = function () {
   textarea.keyDownTimeout = setTimeout(dosignature, 200);
 };
 
-// Simple display / logging
-function log(s) {
-  showStatus(s)  
-}
-
 function showStatus(msg) {
+  // Move to visible portion of window 
+  $("#status span").css("position", "relative");
+  $("#status span").css("top", $("body").scrollTop());
   $('#status span.text').text(msg);
   $('#status').fadeIn();
 }
 
 function hideStatus() {
+  hideTimer = 0;
   $('#status').fadeOut();
 }
 
+hideTimoutID = 0;
 function showStatusAndHideAfterFiveSecs(msg) {
   showStatus(msg);
-  setTimeout(hideStatus, 5000);
+  if (hideTimoutID) {clearTimeout(hideTimoutID);}
+  hideTimoutID = setTimeout(hideStatus, 5000);
 }
 
-dosignature()
+// Kick things off at load time:
+dosignature();
 </script>
 </body>
 </html>

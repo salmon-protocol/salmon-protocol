@@ -17,14 +17,11 @@
 
 __author__ = 'jpanzer@google.com (John Panzer)'
 
-#import urllib
-#import httplib
-#import hashlib
 import unittest
-import signatures
-from base64 import b64encode
+import discovery
+import simplejson as json
 
-class TestValidSignature(unittest.TestCase):
+class TestDiscovery(unittest.TestCase):
   def setUp(self):
     self.test_private_cert = """
 -----BEGIN PRIVATE KEY-----
@@ -52,17 +49,20 @@ Lw03eHTNQghS0A==
                            "B2741113949848E861F8B70ADB0C9091D81C32FD7" +
                            "59782A806473")
   
-  def test_rsa_signature(self):
-    signer = signatures.Signer_RSA_SHA1(self.test_private_cert)
-    validator = signatures.Validator_RSA_SHA1(self.test_public_key)
-    text = unicode("One small splash for a salmon, one giant " +
-                   "leap for salmonkind!","utf-8").encode("utf-8")
-    sig = signer.sign(text)
+  def test_discovery_integration(self):
+    """Tests basic integration with external discovery service."""
+    # Fails due to http://code.google.com/p/webfingerclient-dclinton/issues/detail?id=2 :
+    #s = discovery.discover("does_not_exist_at_all_no_sirree@example.org")
+    #self.assertEquals(s,None)
+
+    s = discovery.discover("jpanzer.at.acm@gmail.com")
+    self.assertNotEqual(s,None)    
     
-    # The just-signed (text,sig) tuple should validate:
-    self.assertTrue(validator.validate(text,sig))
+  def test_public_key_discovery(self):
+    """Tests public key discovery integration with external discovery service."""
+    si = discovery.discover_signing_info("jpanzer.at.acm@gmail.com")
+    self.assertNotEqual(si,None)
+
+    self.assertEqual(si['identity'],"acct:jpanzer.at.acm@gmail.com")
+    self.assertEqual(si['public_keys'],[])
     
-    # Even tiny modifications to the text should not validate:
-    self.assertFalse(validator.validate(text+'a',sig))
-    
-  

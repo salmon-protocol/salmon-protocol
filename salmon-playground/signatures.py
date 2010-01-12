@@ -24,16 +24,33 @@ import logging
 import random
 import dumper
 import datetime
+import os
+import types
+
+import logging
 
 # PyCrypto: Note that this is not available in the
 # downloadable GAE SDK, must be installed separately.
-from Crypto.PublicKey import RSA
+# See http://code.google.com/p/googleappengine/issues/detail?id=2493
+# for why this is most easily installed under the 
+# project's path rather than somewhere more sane.
+import Crypto.PublicKey
+import Crypto.PublicKey.RSA
 from Crypto.Util import number
 
-# To start with, use gdata tlslite library for signing,
-# TODO: Swap this out once we have working tests:
-from gdata.tlslite.utils import keyfactory
-from gdata.tlslite.utils import cryptomath
+# Note that PyCrypto is a very low level library and its documentation
+# leaves something to be desired.  As a cheat sheet, for the RSA
+# algorithm, here's a decoding of terminology:
+#     n - modulus (public)
+#     e - public exponent
+#     d - private exponent
+#     (n, e) - public key
+#     (n, d) - private key
+#     (p, q) - the (private) primes from which the keypair is derived.
+
+# Thus a public key is a tuple (n,e) and a public/private key pair
+# is a tuple (n,e,d).  Often the exponent is 65537 so for convenience
+# we default e=65537 in this code.
 
 def genSignature(xml_buffer):
   """ Not the real signature algorithm, just a placeholder!!!  Do not use for anything serious!!! """
@@ -58,34 +75,69 @@ Lw03eHTNQghS0A==
   signer = Signer_RSA_SHA1(cert)
   return signer.sign(xml_buffer)
 
+# Algorithm generator (for testing only)
+def generateSignatureAlg_RSA_SHA1():
+  logging.info("Module PublicKey = %s\n",Crypto.PublicKey)
+  keypair = Crypto.PublicKey.RSA.generate(512, os.urandom)
+  return SignatureAlg_RSA_SHA1((keypair.n,keypair.e,keypair.d))
+
+# Utilities
+def _num_to_b64(num):
+  return base64.urlsafe_b64encode(number.long_to_bytes(num))
+
+def _b64_to_num(b64):
+  return number.bytes_to_long(base64.urlsafe_b64decode(b64))
+
+
 # Implementation of the Magic Envelope signature algorithm
+class SignatureAlg_RSA_SHA1:
+  """Signature algorithm for RSA-SHA1 Magic Envelope."""
 
-class Validator_RSA_SHA1:
-  """Validator for the RSA-SHA1 signature algorithm.
-     Given a public key, validates signed byte buffers.
-  """
-  def __init__(self, public_key_str, exponent=65537):
-    """
-    Creates a validator for the RSA-SHA1 signing mechanism.
-    
-    Args:
-      public_key_str: string The RSA public key modulus, expressed in hex 
-          format.  Typically, this will look something like: 
-                0x00b1e057678343866db89d7dec2518
-                99261bf2f5e0d95f5d868f81d600c9a1
-                01c9e6da20606290228308551ed3acf9
-                921421dcd01ef1de35dd3275cd4983c7
-                be0be325ce8dfc3af6860f7ab0bf3274
-                2cd9fb2fcd1cd1756bbc400b743f73ac
-                efb45d26694caf4f26b9765b9f656652
-                45524de957e8c547c358781fdfb68ec0
-                56d1
-      exponent: int The RSA public key exponent.
-    """
-    public_key_long = long(public_key_str, 16)
-    self.public_key = RSA.construct((public_key_long, exponent))
+  def __init__(self, initializer):
+    if isinstance(initializer, types.StringType):
+      self.fromstring(initializer)
+    else: 
+      # Assume it's a tuple
+      self.keypair = Crypto.PublicKey.RSA.construct(initializer)
 
-  def validate(self, signed_bytes, signature_b64):
+  def tostring(self, fullkeypair=True):
+    """Returns the string representation of the key, which is just the
+       safebase64 encoded representations of n,e, and optionally d,
+       concatenated together separated by periods."""
+    # mod.exp.private_exp
+    mod = _num_to_b64(self.keypair.n)
+    exp = "." + _num_to_b64(self.keypair.e)
+    private_exp = ""
+    if self.keypair.d: private_exp = "." + _num_to_b64(self.keypair.d)
+    return mod + exp + private_exp
+
+  def fromstring(self,text):
+    """Parses key from a string representation, which should be
+       n,e, and optionally d, concatenated together in safebase64
+       encoded form and separated with periods. """
+    # mod.exp.private_exp
+    (mod,dot,rest) = text.partition(".")
+    (exp,dot,private_exp) = rest.partition(".")
+    self.keypair = Crypto.PublicKey.RSA.construct((_b64_to_num(mod),
+                                                   _b64_to_num(exp),
+                                                   _b64_to_num(private_exp) or None))
+  def get_name(self):
+    return 'RSA-SHA1'
+
+  def sign(self, bytes_to_sign):
+    """Signs the bytes and returns signature in base64 format"""
+    # Expression should be:
+    # b64(signature(sha1_digest(bytes_to_sign)))
+
+    # Sign using the private key (PKCS1-SHA1 signature)
+    sha1_hash_digest = hashlib.sha1(bytes_to_sign).digest()
+
+    # Compute the signature:
+    signature_long = self.keypair.sign(sha1_hash_digest,None)[0]
+    signature_bytes = number.long_to_bytes(signature_long)
+    return base64.urlsafe_b64encode(signature_bytes).encode('utf-8')
+
+  def verify(self, signed_bytes, signature_b64):
     """
     Determines the validity of a signature over a signed buffer of bytes.
     
@@ -95,35 +147,30 @@ class Validator_RSA_SHA1:
       
     Returns: bool True if the request validated, False otherwise.
     """
-    local_hash = hashlib.sha1(signed_bytes).digest()
-      
-    try:
-      remote_signature = base64.urlsafe_b64decode(signature_b64.encode("utf-8"))
-      remote_hash = self.public_key.encrypt(remote_signature, '')[0][-20:]
-    except Exception, err:
-      logging.exception('Error encrypting remote signature:')
-      return False
-      
-    return local_hash == remote_hash
+    # Thing to verify is sha1_digest(signed_bytes)
+
+    # Compute SHA1 digest of signed bytes; this is the actual signed thing:
+    sha1_hash_digest = hashlib.sha1(signed_bytes).digest()
+
+    # Get remote signature:
+    remote_signature = base64.urlsafe_b64decode(signature_b64.encode('utf-8'))
+    remote_signature = number.bytes_to_long(remote_signature)
+
+    # Verify signature given public key:
+    return self.keypair.verify(sha1_hash_digest,(remote_signature,))
 
 
-class Signer_RSA_SHA1:
+class Verifier_RSA_SHA1(SignatureAlg_RSA_SHA1):
+  """Validator for the RSA-SHA1 signature algorithm.
+     Given a public key, validates signed byte buffers.
+  """
+
+class Signer_RSA_SHA1(SignatureAlg_RSA_SHA1):
   """Signer for the RSA-SHA1 signature algorithm.
-     Given a private key, generates signature for an
-     arbitrary byte buffer.
+     Given a private key or public/private keypair,  
+     generates signature for an arbitrary byte buffer.
+     TODO: Figure out if we need to look at OAEP.
   """  
-  def __init__(self, private_cert):
-    self.privatekey = keyfactory.parsePrivateKey(private_cert)
-  
-  def get_name(self):
-    return "RSA-SHA1"
-
-  def sign(self, bytes_to_sign):
-    # Sign using the private key (PKCS1-SHA1 signature)
-    signature_bytes = self.privatekey.hashAndSign(bytes_to_sign)
-
-    # Return signature base64-encoded
-    return base64.urlsafe_b64encode(signature_bytes)
 
 # Data format notes:
 # The basic idea is to wrap the content to be signed inside an "envelope"
