@@ -552,11 +552,11 @@ _MAIN_PAGE_CONTENT = """
         }
 
     </script>
-    <title>GAEUnit: Google App Engine Unit Test Framework</title>
+    <title>Salmon Playground/GAEUnit Tests</title>
 </head>
 <body onload="runTests()">
     <div id="headerarea">
-        <div id="title">GAEUnit: Google App Engine Unit Test Framework</div>
+        <div id="title">Salmon Playground/GAEUnit Tests</div>
         <div id="version">Version %s</div>
     </div>
     <div id="resultarea">

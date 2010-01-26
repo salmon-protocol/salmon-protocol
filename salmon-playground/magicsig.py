@@ -46,9 +46,9 @@ import signatures
 
 # Just for bootstrapping, use test keypair:
 
-the_test_keypair = "mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww==.AQAB.Lgy_yL3hsLBngkFdDw1Jy9TmSRMiH6yihYetQ8jy-jZXdsZXd8V5ub3kuBHHk4M39i3TduIkcrjcsiWQb77D8Q=="
+the_test_keypair = "RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww==.AQAB.Lgy_yL3hsLBngkFdDw1Jy9TmSRMiH6yihYetQ8jy-jZXdsZXd8V5ub3kuBHHk4M39i3TduIkcrjcsiWQb77D8Q=="
 
-the_test_publickey = "mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww==.AQAB"
+the_test_publickey = "RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww==.AQAB"
 
 def createMagicEnv(text, userid):
   """Creates a magic envelope based on input text & current user.
@@ -63,14 +63,14 @@ def createMagicEnv(text, userid):
   assert checkAuthorship(text, userid)
 
   # TODO: Get the private cert based on verifiable chain of evidence
-  signer = signatures.Signer_RSA_SHA1(the_test_keypair)
+  signer = signatures.SignatureAlgRsaSha1(the_test_keypair)
   B = base64.urlsafe_b64encode(unicode(text).encode("utf-8")).encode("utf-8")
 
   return dict(
     data = B,
     encoding = "base64",
-    sig = signer.sign(B),
-    alg = signer.get_name(),
+    sig = signer.Sign(B),
+    alg = signer.GetName(),
   )
 
 def normalizeUserIdToUri(userid):
@@ -112,11 +112,11 @@ def verifyMagicEnv(env):
 
   assert env['alg'] == "RSA-SHA1"
   assert env['encoding'] == "base64"
-  verifier = signatures.Verifier_RSA_SHA1(the_test_publickey)
+  verifier = signatures.SignatureAlgRsaSha1(the_test_publickey)
 
   logging.info("Verifying data:\n%s\n versus signature:\n%s\n",env['data'],env['sig'])
 
-  return verifier.verify(env['data'],env['sig'])
+  return verifier.Verify(env['data'],env['sig'])
 
 
 # TODO: Move this

@@ -223,7 +223,7 @@ class ReplyHandler(webapp.RequestHandler):
     context['timestamp'] = datetime.datetime.utcnow().isoformat()
     
     # Sign the buffer (XML):
-    sig = genSignature(template.render('reply.html', context))
+    sig = GenSampleSignature(template.render('reply.html', context))
 
     # Add signature to XML & write out augmented XML:
     context['signature'] = sig

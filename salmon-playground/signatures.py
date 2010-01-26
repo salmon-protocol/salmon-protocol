@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright (C) 2009 Google Inc.
+# Copyright 2009 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,20 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Magic Signature implemenation for Salmon."""
+
 __author__ = 'jpanzer@google.com (John Panzer)'
 
-"""Handles signature mechanisms for Salmon"""
 
 import base64
-import hashlib
-import logging
-import random
-import dumper
-import datetime
-import os
+import re
 import types
-
-import logging
 
 # PyCrypto: Note that this is not available in the
 # downloadable GAE SDK, must be installed separately.
@@ -37,6 +31,9 @@ import logging
 import Crypto.PublicKey
 import Crypto.PublicKey.RSA
 from Crypto.Util import number
+
+import hashlib
+
 
 # Note that PyCrypto is a very low level library and its documentation
 # leaves something to be desired.  As a cheat sheet, for the RSA
@@ -52,80 +49,100 @@ from Crypto.Util import number
 # is a tuple (n,e,d).  Often the exponent is 65537 so for convenience
 # we default e=65537 in this code.
 
-def genSignature(xml_buffer):
-  """ Not the real signature algorithm, just a placeholder!!!  Do not use for anything serious!!! """
-  cert = """
------BEGIN PRIVATE KEY-----
-MIICdgIBADANBgkqhkiG9w0BAQEFAASCAmAwggJcAgEAAoGBALRiMLAh9iimur8V
-A7qVvdqxevEuUkW4K+2KdMXmnQbG9Aa7k7eBjK1S+0LYmVjPKlJGNXHDGuy5Fw/d
-7rjVJ0BLB+ubPK8iA/Tw3hLQgXMRRGRXXCn8ikfuQfjUS1uZSatdLB81mydBETlJ
-hI6GH4twrbDJCR2Bwy/XWXgqgGRzAgMBAAECgYBYWVtleUzavkbrPjy0T5FMou8H
-X9u2AC2ry8vD/l7cqedtwMPp9k7TubgNFo+NGvKsl2ynyprOZR1xjQ7WgrgVB+mm
-uScOM/5HVceFuGRDhYTCObE+y1kxRloNYXnx3ei1zbeYLPCHdhxRYW7T0qcynNmw
-rn05/KO2RLjgQNalsQJBANeA3Q4Nugqy4QBUCEC09SqylT2K9FrrItqL2QKc9v0Z
-zO2uwllCbg0dwpVuYPYXYvikNHHg+aCWF+VXsb9rpPsCQQDWR9TT4ORdzoj+Nccn
-qkMsDmzt0EfNaAOwHOmVJ2RVBspPcxt5iN4HI7HNeG6U5YsFBb+/GZbgfBT3kpNG
-WPTpAkBI+gFhjfJvRw38n3g/+UeAkwMI2TJQS4n8+hid0uus3/zOjDySH3XHCUno
-cn1xOJAyZODBo47E+67R4jV1/gzbAkEAklJaspRPXP877NssM5nAZMU0/O/NGCZ+
-3jPgDUno6WbJn5cqm8MqWhW1xGkImgRk+fkDBquiq4gPiT898jusgQJAd5Zrr6Q8
-AO/0isr/3aa6O6NLQxISLKcPDk2NOccAfS/xOtfOz4sJYM3+Bs4Io9+dZGSDCA54
-Lw03eHTNQghS0A==
------END PRIVATE KEY-----
-"""
-  signer = Signer_RSA_SHA1(cert)
-  return signer.sign(xml_buffer)
 
-# Algorithm generator (for testing only)
-def generateSignatureAlg_RSA_SHA1():
-  logging.info("Module PublicKey = %s\n",Crypto.PublicKey)
-  keypair = Crypto.PublicKey.RSA.generate(512, os.urandom)
-  return SignatureAlg_RSA_SHA1((keypair.n,keypair.e,keypair.d))
+def GenSampleSignature(text):
+  """Demo using a test public/private keypair."""
+  demo_keypair = ('RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1'
+                  'u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww=='
+                  '.AQAB'
+                  '.Lgy_yL3hsLBngkFdDw1Jy9TmSRMiH6yihYetQ8jy-jZXdsZXd8V5'
+                  'ub3kuBHHk4M39i3TduIkcrjcsiWQb77D8Q==')
+
+  signer = SignatureAlgRsaSha1(demo_keypair)
+  return signer.Sign(text)
+
+# Algorithm generator (for testing only) TODO(jpanzer): Remove this?
+#def GenerateSignatureAlg_RSA_SHA1():
+#  logging.info("Module PublicKey = %s\n",Crypto.PublicKey)
+#  keypair = Crypto.PublicKey.RSA.generate(512, os.urandom)
+#  return SignatureAlg_RSA_SHA1((keypair.n,keypair.e,keypair.d))
+
 
 # Utilities
-def _num_to_b64(num):
+def _NumToB64(num):
+  """Turns a bignum into a urlsafe base64 encoded string."""
   return base64.urlsafe_b64encode(number.long_to_bytes(num))
 
-def _b64_to_num(b64):
+
+def _B64ToNum(b64):
+  """Turns a urlsafe base64 encoded string into a bignum."""
   return number.bytes_to_long(base64.urlsafe_b64decode(b64))
 
 
 # Implementation of the Magic Envelope signature algorithm
-class SignatureAlg_RSA_SHA1:
+class SignatureAlgRsaSha1(object):
   """Signature algorithm for RSA-SHA1 Magic Envelope."""
 
   def __init__(self, initializer):
     if isinstance(initializer, types.StringType):
-      self.fromstring(initializer)
-    else: 
-      # Assume it's a tuple
+      self.FromString(initializer)
+    elif isinstance(initializer, types.TupleType):
       self.keypair = Crypto.PublicKey.RSA.construct(initializer)
+    else:
+      raise TypeError('Initializer must be string or tuple')
 
-  def tostring(self, fullkeypair=True):
-    """Returns the string representation of the key, which is just the
-       safebase64 encoded representations of n,e, and optionally d,
-       concatenated together separated by periods."""
-    # mod.exp.private_exp
-    mod = _num_to_b64(self.keypair.n)
-    exp = "." + _num_to_b64(self.keypair.e)
-    private_exp = ""
-    if self.keypair.d: private_exp = "." + _num_to_b64(self.keypair.d)
-    return mod + exp + private_exp
+  def ToString(self, full_key_pair=True):
+    """Serializes key to a safe string storage format.
 
-  def fromstring(self,text):
-    """Parses key from a string representation, which should be
-       n,e, and optionally d, concatenated together in safebase64
-       encoded form and separated with periods. """
-    # mod.exp.private_exp
-    (mod,dot,rest) = text.partition(".")
-    (exp,dot,private_exp) = rest.partition(".")
-    self.keypair = Crypto.PublicKey.RSA.construct((_b64_to_num(mod),
-                                                   _b64_to_num(exp),
-                                                   _b64_to_num(private_exp) or None))
-  def get_name(self):
+    Args:
+      full_key_pair: Whether to save the private key portion as well.
+    Returns:
+      The string representation of the key in the format:
+
+        RSA.mod.exp[.optional_private_exp]
+
+      Each component is a urlsafe-base64 encoded representation of
+      the corresponding RSA key field.
+    """
+    mod = _NumToB64(self.keypair.n)
+    exp = '.' + _NumToB64(self.keypair.e)
+    private_exp = ''
+    if full_key_pair and self.keypair.d:
+      private_exp = '.' + _NumToB64(self.keypair.d)
+    return 'RSA.' + mod + exp + private_exp
+
+  def FromString(self, text):
+    """Parses key from the standard string storage format.
+
+    Args:
+      text: The key in text form.  See ToString for description
+        of expected format.
+    Raises:
+      ValueErrror: The input format was incorrect.
+    """
+    # First, remove all whitespace:
+    text = re.sub('\s+', '', text)
+
+    # Parse out the period-separated components
+    key_regexp = 'RSA\.([^\.]+)\.([^\.]+)(.([^\.]+))?'
+    m = re.match(key_regexp, text)
+    if not m:
+      raise ValueError('Badly formatted key string: '+text)
+
+    (mod,exp) = m.group(1, 2)
+    private_exp = ''
+    if m.group(3):
+      private_exp = m.group(4)
+    self.keypair = Crypto.PublicKey.RSA.construct((_B64ToNum(mod),
+                                                   _B64ToNum(exp),
+                                                   _B64ToNum(private_exp) or
+                                                   None))
+
+  def GetName(self):
     return 'RSA-SHA1'
 
-  def sign(self, bytes_to_sign):
-    """Signs the bytes and returns signature in base64 format"""
+  def Sign(self, bytes_to_sign):
+    """Signs the bytes and returns signature in base64 format."""
     # Expression should be:
     # b64(signature(sha1_digest(bytes_to_sign)))
 
@@ -133,19 +150,18 @@ class SignatureAlg_RSA_SHA1:
     sha1_hash_digest = hashlib.sha1(bytes_to_sign).digest()
 
     # Compute the signature:
-    signature_long = self.keypair.sign(sha1_hash_digest,None)[0]
+    signature_long = self.keypair.sign(sha1_hash_digest, None)[0]
     signature_bytes = number.long_to_bytes(signature_long)
     return base64.urlsafe_b64encode(signature_bytes).encode('utf-8')
 
-  def verify(self, signed_bytes, signature_b64):
-    """
-    Determines the validity of a signature over a signed buffer of bytes.
-    
+  def Verify(self, signed_bytes, signature_b64):
+    """Determines the validity of a signature over a signed buffer of bytes.
+
     Args:
       signed_bytes: string The buffer of bytes the signature_b64 covers.
       signature_b64: string The putative signature, base64-encoded, to check.
-      
-    Returns: bool True if the request validated, False otherwise.
+    Returns:
+      True if the request validated, False otherwise.
     """
     # Thing to verify is sha1_digest(signed_bytes)
 
@@ -157,20 +173,8 @@ class SignatureAlg_RSA_SHA1:
     remote_signature = number.bytes_to_long(remote_signature)
 
     # Verify signature given public key:
-    return self.keypair.verify(sha1_hash_digest,(remote_signature,))
+    return self.keypair.verify(sha1_hash_digest, (remote_signature,))
 
-
-class Verifier_RSA_SHA1(SignatureAlg_RSA_SHA1):
-  """Validator for the RSA-SHA1 signature algorithm.
-     Given a public key, validates signed byte buffers.
-  """
-
-class Signer_RSA_SHA1(SignatureAlg_RSA_SHA1):
-  """Signer for the RSA-SHA1 signature algorithm.
-     Given a private key or public/private keypair,  
-     generates signature for an arbitrary byte buffer.
-     TODO: Figure out if we need to look at OAEP.
-  """  
 
 # Data format notes:
 # The basic idea is to wrap the content to be signed inside an "envelope"
@@ -179,47 +183,47 @@ class Signer_RSA_SHA1(SignatureAlg_RSA_SHA1):
 # that can be used as-is or as part of other building blocks.  There
 # are XML and JSON variants:
 
-# Content-Type: application/magic-signed+xml
-# <me:signed xmlns:me="http://salmon-protocol.org/ns/magic-signed">
-#   <data type="application/atom+xml">B</data>
-#   <alg>RSA-SHA1</alg>
-#   <sig>S</sig>
-#   <signer>acct:bob@example.org></signer>
-# <me:signed>
+# Content-Type: application/magic-envelope+xml
+#<?xml version='1.0' encoding='UTF-8'?>
+#<me:env xmlns:me='http://salmon-protocol.org/ns/magic-env'>
+#  <me:data type='application/atom+xml' encoding='base64'>PD94...A==</me:data>
+#  <me:alg>RSA-SHA1</me:alg>
+#  <me:sig>EvGSD2vi8qYcveHnb-rrlok07qnCXjn8YSeCDDXlbhILSabgvNsPpbe76up8w63i2fWHvLKJzeGLKfyHg8ZomQ==</me:sig>
+#</me:env>
 
 # Content-Type: application/magic-envelope+json
 # [
-#   {"data" : B},
-#   {"data-type": "application/json"},
+#   {"data" : "PD94...A=="},
+#   {"data.type": "application/atom+xml"},
+#   {"data.encoding": "base64"},
 #   {"alg": "RSA-SHA1"},
-#   {"sig": S},
-#   {"signer": "acct:bob@example.org"}
+#   {"sig": "EvGSD2vi8qYcveHnb-rrlok07qnCXjn8YSeCDDXlbhILSabgvNsPpbe76up8w63i2fWHvLKJzeGLKfyHg8ZomQ=="},
 # ]
   
 # Content-Type: application/atom+xml
-# <entry>
-#   <id>some id</id>
-#   <title>some title</title>
-#   <author><url>acct:bob@example.org</url></author>
-#   <updated>some timestamp</updated>
-#   <content>possibly modified content goes here</content>
-#   <me:signed>
-#     <data type="application/atom+xml">B</data>
-#     <alg>RSA-SHA1</alg>
-#     <sig>S</sig>
-#     <signer>acct:bob@example.org></signer>
-#   <me:signed>
-# </entry>
+#<?xml version="1.0" encoding="utf-8"?><entry xmlns="http://www.w3.org/2005/Atom">
+#  <id>tag:example.com,2009:cmt-0.44775718</id>  
+#  <author><name>test@example.com</name><uri>acct:jpanzer@google.com</uri></author>
+#  <thr:in-reply-to ref="tag:blogger.com,1999:blog-893591374313312737.post-3861663258538857954" xmlns:thr="http://purl.org/syndication/thread/1.0">tag:blogger.com,1999:blog-893591374313312737.post-3861663258538857954
+#  </thr:in-reply-to>
+#  <content>Salmon swim upstream!</content>
+#  <title>Salmon swim upstream!</title>
+#  <updated>2009-12-18T20:04:03Z</updated>
+#  <me:provenance xmlns:me="http://salmon-protocol.org/ns/magic-env">
+#    <me:data encoding="base64" type="application/atom+xml">PD94...A==</me:data>
+#    <me:alg>RSA-SHA1</me:alg>
+#    <me:sig>EvGSD2vi8qYcveHnb-rrlok07qnCXjn8YSeCDDXlbhILSabgvNsPpbe76up8w63i2fWHvLKJzeGLKfyHg8ZomQ==</me:sig>
+#  </me:provenance>
+#</entry>
 
 # The Atom form is for use with legacy processors that do not understand 
 # application/magic-envelope, or to expose data to a mixed audience
 # of processers some of whom understand magic-envelope and some of whom
 # cannot.  The bare form is preferred for brevity, simplicity, and security
 # wherever possible.  It is legal and possible to create a <feed> which
-# contains <me:signed-entry> elements.  It is even useful.
+# contains <me:env> elements, but they will only be understood by
+# Magic Envelope-aware feed processors.
 
 # To turn a signed-entry into an Atom entry for processing involves a simple
-# intermediate step: entry = xml_parse(base64decode(signed-entry.data)).  
-# Verifying that the signature is valid is more complicated of course.
-
-
+# intermediate step: entry = xml_parse(base64decode(envelope.data)).  
+# Verifying that the signature is valid is more complicated.
