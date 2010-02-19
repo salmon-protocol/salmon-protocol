@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2.4
 #
 # Copyright 2009 Google Inc. All Rights Reserved.
 #
@@ -14,13 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for signatures.py."""
+"""Tests for magicsigalg.py."""
 
 __author__ = 'jpanzer@google.com (John Panzer)'
 
 import re
 import unittest
-import signatures
+import magicsigalg
 
 
 def _StripWS(s):
@@ -28,8 +28,8 @@ def _StripWS(s):
   return re.sub('\s+', '', s)
 
 
-class TestSignature(unittest.TestCase):
-  """Tests signatures module."""
+class TestMagicSigAlg(unittest.TestCase):
+  """Tests magicsigalg module."""
 
   _test_publickey = ('RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1'
                      'u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww==.AQAB')
@@ -42,27 +42,27 @@ class TestSignature(unittest.TestCase):
 
   def setUp(self):
     # Well known keys to use for testing:
-    self.signer = signatures.SignatureAlgRsaSha1(self._test_keypair)
-    self.verifier = signatures.SignatureAlgRsaSha1(self._test_publickey)
+    self.signer = magicsigalg.SignatureAlgRsaSha256(self._test_keypair)
+    self.verifier = magicsigalg.SignatureAlgRsaSha256(self._test_publickey)
 
   def testNumberSerialization(self):
     # Just for extra paranoia, as the underlying libraries don't have tests:
-    self.assertEquals(signatures._NumToB64(1), 'AQ==')
+    self.assertEquals(magicsigalg._NumToB64(1), 'AQ==')
 
     # This will fail if someone swaps to little endian by accident:
-    self.assertEquals(signatures._NumToB64(65537), 'AQAB')
+    self.assertEquals(magicsigalg._NumToB64(65537), 'AQAB')
 
     # Test round tripping of a realistically large number:
     n = pow(2, 2048) + 42
-    b64 = signatures._NumToB64(n)
-    self.assertEquals(signatures._B64ToNum(b64), n)
+    b64 = magicsigalg._NumToB64(n)
+    self.assertEquals(magicsigalg._B64ToNum(b64), n)
 
   def testBadKey(self):
     # Bad input should raise appropriate exceptions
     self.assertRaises(ValueError,
-                      signatures.SignatureAlgRsaSha1, 'Barney the dinosaur')
+                      magicsigalg.SignatureAlgRsaSha256, 'Barney the dinosaur')
     self.assertRaises(TypeError,
-                      signatures.SignatureAlgRsaSha1, 42)
+                      magicsigalg.SignatureAlgRsaSha256, 42)
 
   def testRsaSignature(self):
     text = unicode('One small splash for a salmon, one giant '
@@ -83,4 +83,3 @@ class TestSignature(unittest.TestCase):
                       _StripWS(self._test_publickey))
     self.assertNotEquals(_StripWS(self.signer.ToString()),
                          _StripWS(self.verifier.ToString()))
-

@@ -34,13 +34,13 @@ import userdb
 from oauth import OAuthDanceHandler, OAuthHandler, requiresOAuth
 
 # Demos
-import magicsig
+import magicsigdemo
 
 #Data model
 import model
 import bloggerproxy
 from model import Entry
-from signatures import *
+#from signatures import *
 
 from utils import *
 
@@ -287,8 +287,8 @@ application = webapp.WSGIApplication(
     (r'/', MainHandler),
     (r'/oauth/(.*)', OAuthDanceHandler),
     (r'/blogproxy', bloggerproxy.BlogProxyHandler),
-    (r'/magicsigdemo', magicsig.SignThisHandler),
-    (r'/magicsigdemoverify', magicsig.VerifyThisHandler)
+    (r'/magicsigdemo', magicsigdemo.SignThisHandler),
+    (r'/magicsigdemoverify', magicsigdemo.VerifyThisHandler)
   ],
   debug=True)
 
