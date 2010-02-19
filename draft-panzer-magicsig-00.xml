@@ -1,14 +1,11 @@
 <?xml version="1.0" encoding="US-ASCII"?>
 <!DOCTYPE rfc SYSTEM "rfc2629.dtd" [
-
 <!ENTITY RFC2119 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml">
-<!ENTITY RFC2629 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.2629.xml">
 <!ENTITY RFC3552 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.3552.xml">
 <!ENTITY RFC4648 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.4648.xml">
 <!ENTITY RFC3447 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.3447.xml">
 <!ENTITY RFC2045 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.2045.xml">
 <!ENTITY RFC4627 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.4627.xml">
-
 <!ENTITY I-D.narten-iana-considerations-rfc2434bis SYSTEM "http://xml.resource.org/public/rfc/bibxml3/reference.I-D.narten-iana-considerations-rfc2434bis.xml">
 ]>
 <?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
@@ -20,75 +17,51 @@
 <?rfc compact="yes" ?>
 <?rfc subcompact="no" ?>
 <?rfc private="Draft" ?>
-
+<!-- Turn into html via:
+xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
 <!-- To remove before final draft: Display internal comments/TODOs, inline -->
 <?rfc comments="yes"?>
 <?rfc inline="yes"?>
-
 <!-- end of list of popular I-D processing instructions -->
-<rfc category="info" docName="draft-panzer-magicsig-00" ipr="full3978">
-
+<rfc category="info" docName="draft-panzer-magicsig-00" >
   <!-- ***** FRONT MATTER ***** -->
-
   <front>
-    <!-- The abbreviated title is used in the page header - it is only necessary if the 
-         full title is longer than 39 characters -->
-
     <title abbrev="Magic Signatures">Magic Signatures</title>
-
-    <!-- add 'role="editor"' below for the editors if appropriate -->
-
-    <!-- Another author who claims to be an editor -->
-
-    <author fullname="John Panzer" initials="J.P." role="editor"
-            surname="Panzer">
+    <author fullname="John Panzer" initials="J.P." role="editor" surname="Panzer">
       <organization>Google Inc.</organization>
-
       <address>
         <postal>
           <street>1600 Ampitheatre Parkway</street>
-
           <!-- Reorder these if your country does things differently -->
-
           <city>Mountain View</city>
-
           <region>CA</region>
-
-          <code></code>
-
+          <code/>
           <country>USA</country>
         </postal>
-
-        <phone></phone>
-
+        <phone/>
         <email>jpanzer@google.com</email>
-
         <!-- uri and facsimile elements may also be added -->
       </address>
     </author>
-
-    <date month="February" year="2010" />
-
+    <author fullname="Ben Laurie" initials="B.L." surname="Laurie">
+      <organization>Google Inc.</organization>
+    </author>
+    <date month="February" year="2010"/>
     <!-- Meta-data Declarations -->
-
     <area>General</area>
-
-    <workgroup>Internet Engineering Task Force</workgroup>
+    <workgroup>Internet Engineering Task Force</workgroup>
     <keyword>signatures</keyword>
     <keyword>PKI</keyword>
-
     <abstract>
       <t>This document defines a lightweight, robust mechanism for digitally signing nearly 
          arbitrary messages,
          along with a basic public key infrastructure for discovering the signing keys.</t>
-
       <t>It is intended to be a building block in the construction of other protocols, providing
          a commonly agreed upon abstraction layer on top of lower level protocols such as 
          <xref target="LRDD">Webfinger/LRDD</xref>, <xref target="XRD">XRD</xref>, 
          and <xref target="RFC3447">PKCS</xref>.</t>
     </abstract>
   </front>
-
   <middle>
     <section title="Introduction">
       <t>The primary goal of Magic Signatures is to enable lightweight and robust public key signing 
@@ -98,30 +71,23 @@
       <t>This mechanism is an alternative to XML-DSig.  In the field, XML-DSig has proven to be problematic
          in applications such as syndication of feeds.  Compared to XML-DSig, Magic Signatures offers 
          the following features:
-         <list style="numbers">
-           <t>Can handle any data format; not tied to XML.</t>
-           <t>Does not require any canonicalization beyond removal of whitespace, so it is much easier
-              to verify messages correctly.</t>
-           <t>Can survive message disassembly, storage into arbitrary systems, and 
-              re-constitution without invalidating the signature.</t>
-           <t>Significantly smaller and simpler specification.</t>
-         </list>
+         <list style="numbers"><t>Can handle any data format; not tied to XML.</t><t>Does not require any canonicalization beyond removal of whitespace, so it is much easier
+              to verify messages correctly.</t><t>Can survive message disassembly, storage into arbitrary systems, and 
+              re-constitution without invalidating the signature.</t><t>Significantly smaller and simpler specification.</t></list>
          Magic Signatures does not attempt to address every XML-DSig use case, so it is best
          described as a lightweight, robust, and minimal form of digital signatures that can be used
          and deployed where XML-DSig cannot be relied on.  Note that for XML, it is possible to combine both 
          mechanisms.
       </t>
-
       <section title="Requirements Language">
         <t>The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
         "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
-        document are to be interpreted as described in <xref
-        target="RFC2119">RFC 2119</xref>.</t>
+        document are to be interpreted as described in <xref target="RFC2119">RFC 2119</xref>.</t>
       </section>
     </section>
-
     <section anchor="definitions" title="Definitions">
-      <t><list style="hanging">
+      <t>
+        <list style="hanging">
           <t hangText="Signature:">A digital signature that provably binds a message to a signer's keypair.</t>
           <t hangText="Signer:">In this specification, an arbitrary identifier associated with a keypair
               used in a signature.</t>
@@ -131,34 +97,24 @@
         </list>
       </t>
     </section>
-
     <!-- This PI places the pagebreak correctly (before the section title) in the text output. -->
-
     <?rfc needLines="8" ?>
-
     <section title="Magic Envelope Definition">
       <t>A "Magic Envelope" comprises a message bundled along with a signature for that message, expressed
       as a series of parameters, and serialized as either XML or JSON.  The envelope specifies the data
       to be signed, the MIME type of the data, the transfer encoding, and the signature.</t>
-
       <section title="Magic Envelope Parameters" anchor="params">
         <t>
         This section describes the semantics of the parameters which are serializion-independent.
-        <list style="hanging">
-          <t hangText="data:">The payload covered by the signature, encoded into an ASCII string.  
+        <list style="hanging"><t hangText="data:">The payload covered by the signature, encoded into an ASCII string.  
           This string is guaranteed to be safe to include without escaping as XML text
-          and in JSON strings.</t>
-          <t hangText="data_type:">The <xref target="RFC2045">MIME</xref> type of the payload prior to encoding.</t>
-          <t hangText="encoding:">The encoding used to convert between the MIME type and the "data" string.
+          and in JSON strings.</t><t hangText="data_type:">The <xref target="RFC2045">MIME</xref> type of the payload prior to encoding.</t><t hangText="encoding:">The encoding used to convert between the MIME type and the "data" string.
           In this specification, encoding MUST be the string "base64url", indicating the url safe base64
           encoding as described in <xref target="RFC4648">RFC 4648</xref>, without trailing padding.  All
-          implementations MUST support this encoding.</t>
-          <t hangText="alg:">The algorithm used for the signature.  This specification describes only one 
-          signature algorithm, "RSA-SHA256", which all implementations MUST support.</t>
-          <t hangText="sig:">The generated signature.  This is a string in the base64url encoded format as described
+          implementations MUST support this encoding.</t><t hangText="alg:">The algorithm used for the signature.  This specification describes only one 
+          signature algorithm, "RSA-SHA256", which all implementations MUST support.</t><t hangText="sig:">The generated signature.  This is a string in the base64url encoded format as described
           above.  It is generated according to "Signing Messages" [ref], and verified according to 
-          "Verifying Messages" [ref]</t>
-        </list>
+          "Verifying Messages" [ref]</t></list>
         <cref anchor="TODO1" source="JP">Per benl, should the signature also cover the type, encoding, and algorithm parameters?
         This adds to complexity of signing and verifying.  The MIME type is probably the most important given that the other
         parameters are essentially hard coded constants at this point; I imagine there are attacks that involve modifying the
@@ -168,7 +124,6 @@
         both use application/*, I think the existing draft is correct; but open to other opinions.</cref>
         </t>
       </section>
-
       <section title="The XML Serialization">
         <t>A Magic Envelope XML Document is defined in terms of the XML Information Set, 
         serialized as XML 1.0 [W3C.REC-xml-20040204] and identified with the 
@@ -181,16 +136,11 @@
         the me:env form merely adds a signed envelope to the DOM without implying any particular semantics.</t>
         <t>The parameters are mapped to XML elements and attributes as follows.  Each parameter MUST appear
         exactly once per envelope.</t>
-        <t><list style="hanging">
-          <t hangText="The &lt;me:data&gt; element (REQUIRED):">Contains the "data" payload, an ASCII string, as 
+        <t><list style="hanging"><t hangText="The &lt;me:data&gt; element (REQUIRED):">Contains the "data" payload, an ASCII string, as 
             described in
             <xref target="params"/>.  The element contains one REQUIRED attribute, "type",
             which contains the value of the "data_type" parameter.
-          </t>
-          <t hangText="The &lt;me:encoding&gt; element (REQUIRED):">Contains the value of the "encoding" parameter.</t>
-          <t hangText="The &lt;me:alg&gt; element (REQUIRED):">Contains the value of the "alg" parameter.</t>
-          <t hangText="The &lt;me:sig&gt; element (REQUIRED):">Contains the value of the "sig" parameter, an ASCII string.</t>
-        </list>
+          </t><t hangText="The &lt;me:encoding&gt; element (REQUIRED):">Contains the value of the "encoding" parameter.</t><t hangText="The &lt;me:alg&gt; element (REQUIRED):">Contains the value of the "alg" parameter.</t><t hangText="The &lt;me:sig&gt; element (REQUIRED):">Contains the value of the "sig" parameter, an ASCII string.</t></list>
         Additional elements not defined by this specification MAY appear as children of the me:env
         or me:provenance elements, but MUST NOT appear as children of any other element.  Processors MUST ignore
         elements they do not understand.</t>
@@ -222,13 +172,12 @@
 		]]></artwork></figure>
         </t>
       </section>
-
       <section title="The JSON Serialization">
-         <t>Magic Envelope JSON MUST be well formed JSON as defined in <xref target="RFC4627"/>.  The parameters are serialized into
+        <t>Magic Envelope JSON MUST be well formed JSON as defined in <xref target="RFC4627"/>.  The parameters are serialized into
          a JSON object as a sequence of name/value pairs, using the parameter names "data", "data_type", "encoding", 
          "alg", and "sig" directly.  These values MUST be represented as JSON strings.
          The value of each name/value pair is a JSON string containing the corresponding parameter's string value.</t>
-         <t>Additional name/value pairs MAY appear within the JSON object and processors MUST ignore elements they
+        <t>Additional name/value pairs MAY appear within the JSON object and processors MUST ignore elements they
          do not understand.</t>
         <t>Example:      
           <figure><artwork><![CDATA[
@@ -257,7 +206,6 @@
         </t>
       </section>
     </section>
-
     <section title="Provenance in Atom Entries">
       <t>Magic Envelope parameters may be embedded within an Atom Entry to provide verifiable provenance.  In this case
       the Magic Envelope elements are contained within an "me:provenance" root element to signal their purpose.</t>
@@ -297,13 +245,11 @@
         ]]></artwork></figure>
       </t>
     </section>
-  
     <section title="Provenance in JSON Data Structures">
       <t>A Magic Envelope JSON data structure may be embedded within any JSON structure.  When this is done
       to verify the provenance of associated data by augmenting an existing object, the object SHOULD
       use the key name "provenance" for the object containing the Magic Envelope fields.</t>
     </section>
-
     <section title="Standalone Magic Envelope Messages">
       <t>The application/magic-envelope+{atom,json} data structures MAY be used standalone, as a drop-in replacement
       for the data that is encoded in the data element.  This would be appropriate where the recipient understands 
@@ -321,10 +267,9 @@
         warning, or perform other actions as required by their security model.
         <cref anchor="TODO5" source="JP">Talk about security models somewhere; clearly delineate where this spec leaves
         off and referencing specs need to provide a model.</cref>
-        </t> 
+        </t>
       </section>
     </section>
-
     <section title="Encoding of data and sig using base64url" anchor="encoding">
       <t>The data and sig fields of a Magic Envelope are encoded as armored ASCII strings using
       a procedure chosen to be robust in the face of various types of transports and storage systems.
@@ -337,10 +282,7 @@
           The basic procedure is to use the URL and Filename safe variant of the base64 encoding as described in
           <xref target="RFC4648">RFC 4648</xref>, section 5, and skipping any trailing padding
           as described in section 3.2: 
-          <list style="numbers">
-            <t>Base64url encode the binary data.</t>
-            <t>Remove all '=' (0x3D) padding characters from the result.</t>
-          </list>
+          <list style="numbers"><t>Base64url encode the binary data.</t><t>Remove all '=' (0x3D) padding characters from the result.</t></list>
           The result is a string that consists only of the ASCII alphanumeric characters along with
           '-' and '_'.  In regular expression form, this is "^[A-Za-z0-9\-_]*$".  This is the normalized
           form of the encoded data, and is the octet sequence that is used to generate the digital
@@ -354,16 +296,11 @@
           The basic procedure is the reverse of encoding, with the additional step that whitespace from the
           input should be ignored.  This is necessary for robustness because some transports may insert
           whitespace, and is useful to allow for human readable formatting of documents in any case.
-          <list style="numbers">
-            <t>Normalize the string by removing all whitespace characters from input.</t>
-            <t>Pad the resulting string with trailing '=' (0x3D) characters to make its length evenly 
-            divisible by 4.</t>     
-            <t>Base64url decode the resulting string to produce the original binary data.</t>
-          </list>
+          <list style="numbers"><t>Normalize the string by removing all whitespace characters from input.</t><t>Pad the resulting string with trailing '=' (0x3D) characters to make its length evenly 
+            divisible by 4.</t><t>Base64url decode the resulting string to produce the original binary data.</t></list>
         </t>
       </section>
     </section>
-
     <section title="Signing Messages">
       <t>Signing a message consists of signing the contents of "data" using the "alg".  This specification
       defines only the "RSA-SHA256" algorithm, meaning the RSASSA-PKCS1-v1_5 signature algorithm from 
@@ -378,9 +315,8 @@
       <t>The signature is computed as signature_octets = RSASSA-PKCS1-V1_5-SIGN (K, M), where K is the
       private signing key and M is the exact armored string for "data" produced by [Ref encoding section].</t>
       <t>The signature is then encoded as in [Ref encoding section] and the resulting ASCII armored string
-      stored in "sig".</t>  
+      stored in "sig".</t>
     </section>
-
     <section title="Verifying Messages">
       <t>Verifying a message consists of verifying that "sig" is a valid signature for "data" using "alg".
       This specification defines only the "RSA-SHA256" verification algorithm, meaning the RSASSA-PKCS1-v1_5 
@@ -398,13 +334,11 @@
       <t>The public key (n, e) is obtained using the simple public key infrastructure described by 
       <xref target="spki"/>.</t>
     </section>
-
     <section title="Simple Public Key Infrastructure" anchor="spki">
       <t>This section defines a public key infrastructure based on URI discovery, as defined in [ref LRDD].
       Specifically, given a URI such as "acct:bob@example.com" or "http://example.com/bob", the corresponding 
       public key(s) for that identifier can be found via LRDD discovery for links of type rel="magic-public-key".  
       This specification defines a new MIME type for simple RSA public key(pairs).</t>
-
       <section title="The application/magic-key MIME type">
         <t>The application/magic-key format is a very minimal format for representing public key data.
         It consists of a string of ASCII text, separated into 3 or 4 components, with components separated 
@@ -422,7 +356,6 @@
 
         </t>
       </section>
-
       <section title="Discovery">
         <t>This section defines how to map from a URI based identifier to a public signing key for that 
         identifier.  Though the exact mechanism for a verifier to determine the identifier of the signer
@@ -446,15 +379,11 @@
         an XRD file (and covered by its security).</t>
         <t>Example: href="data:application/magic-public-key;,RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww.AQAB"</t>
       </section>
-
     </section>
-
     <section anchor="Acknowledgements" title="Acknowledgements">
       <t>TODO.</t>
     </section>
-
     <!-- Possibly a 'Contributors' section ... -->
-
     <section anchor="IANA" title="IANA Considerations">
       <t>O keeper of the sacred names and numbers, hear this specification's humble plea for media type registraions.</t>
       <t>The MIME media type for the XML serialization of a Magic Envelope is application/magic-env+xml.</t>
@@ -474,18 +403,14 @@
       <t>Required parameters: n/a</t>
       <t>Optional parameters: n/a</t>
     </section>
-
     <section anchor="Security" title="Security Considerations">
       <t>TODO.
       See <xref target="RFC3552">RFC 3552</xref> for a guide.</t>
     </section>
   </middle>
-
   <!--  *****BACK MATTER ***** -->
-
   <back>
     <!-- References split into informative and normative -->
-
     <!-- There are 2 ways to insert reference entries from the citation libraries:
      1. define an ENTITY at the top, and use "ampersand character"RFC2629; here (as shown)
      2. simply use a PI "less than character"?rfc include="reference.RFC.2119.xml"?> here
@@ -496,12 +421,8 @@
      directory as the including file. You can also define the XML_LIBRARY environment variable
      with a value containing a set of directories to search.  These can be either in the local
      filing system or remote ones accessed by http (http://domain/dir/... ).-->
-
-    <references title="Normative References">
-      <!--?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml"?-->
+    <references title="Normative References"><!--?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml"?-->
       &RFC2119;
-
-      &RFC2629;
 
       &RFC3552;
 
@@ -513,47 +434,24 @@
 
       &RFC4627;
      
-      <reference anchor="LRDD" target="http://groups.google.com/group/webfinger/browse_thread/thread/9f3d93a479e91bbf">
-        <front>
-          <title>LRDD Proposal Draft</title>
-          <author initials="EHL" surname="Eran" fullname="Hammer-Lahav">
-            <organization />
-          </author>
-        </front>
-      </reference>
+      <reference anchor="LRDD" target="http://groups.google.com/group/webfinger/browse_thread/thread/9f3d93a479e91bbf"><front><title>LRDD Proposal Draft</title><author initials="EHL" surname="Eran" fullname="Hammer-Lahav"><organization/></author></front></reference>
 
-      <reference anchor="XRD" 
-          target="http://tools.oasis-open.org/version-control/browse/wsvn/xri/xrd/1.0/drafts/wd13/xrd-1.0-wd13.html">
-        <front>
-          <title>Extensible Resource Descriptor (XRD) Version 1.0, Working Draft 13</title>
-          <author initials="EHL" surname="Eran" fullname="Hammer-Lahav">
-            <organization />
-          </author>
-          <author initials="WN" surname="Will" fullname="Norris">
-            <organization />
-          </author>
-        </front>
-      </reference>
+      <reference anchor="XRD" target="http://tools.oasis-open.org/version-control/browse/wsvn/xri/xrd/1.0/drafts/wd13/xrd-1.0-wd13.html"><front><title>Extensible Resource Descriptor (XRD) Version 1.0, Working Draft 13</title><author initials="EHL" surname="Eran" fullname="Hammer-Lahav"><organization/></author><author initials="WN" surname="Will" fullname="Norris"><organization/></author></front></reference>
 
     </references>
-
-    <references title="Informative References">
-      <!-- Here we use entities that we defined at the beginning. -->
+    <references title="Informative References"><!-- Here we use entities that we defined at the beginning. -->
 
       &I-D.narten-iana-considerations-rfc2434bis;
 
 http://lists.openid.net/pipermail/openid-specs/2009-June/005831.html
 
     </references>
-
     <section title="Specification Feedback">
       <t>The primary driver of this specification is the Salmon protocol.
       Feedback on this specification is thus welcomed via the salmon-discuss mailing
-      list, salmon-protocol@googlegroups.com.  For more information, see <eref
-      target="http://groups.google.com/group/salmon-protocol">the Salmon discussion
+      list, salmon-protocol@googlegroups.com.  For more information, see <eref target="http://groups.google.com/group/salmon-protocol">the Salmon discussion
       group</eref>.</t>
     </section>
-
     <!-- Change Log
 
   -->
