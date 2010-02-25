@@ -373,6 +373,13 @@ def _load_default_test_modules(test_dir):
     module_names = [mf[0:-3] for mf in os.listdir(test_dir) if mf.endswith(".py")]
     return [reload(__import__(name)) for name in module_names]
 
+def _load_local_test_modules():
+    '''Load anything *_test.py in project directory'''
+    if not '.' in sys.path:
+      sys.path.append('.')
+    module_names= [mf[0:-3] for mf in os.listdir('.') if
+                   md.endswith("_test.py")]
+    return [reload(__import__(name)) for name in module_names]
 
 def _get_tests_from_suite(suite, tests):
     for test in suite:
