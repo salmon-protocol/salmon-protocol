@@ -1,6 +1,6 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html lang="en"><head><title>Draft: The Salmon Protocol</title>
-<meta http-equiv="Expires" content="Thu, 25 Feb 2010 23:17:23 +0000">
+<meta http-equiv="Expires" content="Mon, 01 Mar 2010 23:52:26 +0000">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <meta name="description" content="The Salmon Protocol">
 <meta name="generator" content="xml2rfc v1.34 (http://xml.resource.org/)">
@@ -144,7 +144,7 @@
 <table summary="layout" width="66%" border="0" cellpadding="0" cellspacing="0"><tr><td><table summary="layout" width="100%" border="0" cellpadding="2" cellspacing="1">
 <tr><td class="header">Draft</td><td class="header">J. Panzer</td></tr>
 <tr><td class="header">&nbsp;</td><td class="header">Google Inc.</td></tr>
-<tr><td class="header">&nbsp;</td><td class="header">February 25, 2010</td></tr>
+<tr><td class="header">&nbsp;</td><td class="header">February 2010</td></tr>
 </table></td></tr></table>
 <h1><br />The Salmon Protocol</h1>
 
@@ -255,7 +255,7 @@ Definitions</h3>
 <dd>A service or agent that creates new
             salmon on behalf of a user.
 </dd>
-<dt>endpoint:</dt>
+<dt>Salmon endpoint:</dt>
 <dd>A URL to which a salmon is POSTed via
             HTTP.
 </dd>
@@ -286,7 +286,7 @@ Salmon Discovery</h3>
         provide the endpoint(s) to which salmon may be sent.  It relies on
         link endpoint discovery per <a class='info' href='#WebLinking'>[WebLinking]<span> (</span><span class='info'>Nottingham, M., &ldquo;Web Linking I-D, draft 7,&rdquo; .</span><span>)</span></a> for feeds
         and HTML pages, and discoverable URIs per <a class='info' href='#LRDD'>[LRDD]<span> (</span><span class='info'>Hammer-Lahav, E., &ldquo;LRDD             Proposal Draft,&rdquo; .</span><span>)</span></a>,
-        <a class='info' href='#Webfinger'>[Webfinger]<span> (</span><span class='info'>Gregorio, J., Panzer, J., Fitzpatrick, B., and B. Cook, &ldquo;The Webfinger Protocol,&rdquo; .</span><span>)</span></a>, and <a class='info' href='#XRD'>[XRD]<span> (</span><span class='info'>Hammer-Lahav, E. and W. Norris, &ldquo;Extensible Resource Descriptor (XRD) Version 1.0, Working Draft             13,&rdquo; .</span><span>)</span></a>.  The
+        <a class='info' href='#Webfinger'>[Webfinger]<span> (</span><span class='info'>Fitzpatrick, B., Hammer-Lahav, E., Cook, B., Panzer, J., and J. Gregorio, &ldquo;The Webfinger Protocol,&rdquo; .</span><span>)</span></a>, and <a class='info' href='#XRD'>[XRD]<span> (</span><span class='info'>Hammer-Lahav, E. and W. Norris, &ldquo;Extensible Resource Descriptor (XRD) Version 1.0, Working Draft             13,&rdquo; .</span><span>)</span></a>.  The
         following sections define the
         semantics of new link relations introduced by Salmon.
 </p>
@@ -331,17 +331,15 @@ The 'salmon-mention' Link Relation</h3>
           specifies a Salmon endpoint to be
           used for direct mentions about the entity controlling the associated
           resource.  Typically this will be a user account.  For example, it may
-          appear in the Webfinger <a class='info' href='#Webfinger'>[Webfinger]<span> (</span><span class='info'>Gregorio, J., Panzer, J., Fitzpatrick, B., and B. Cook, &ldquo;The Webfinger Protocol,&rdquo; .</span><span>)</span></a>
+          appear in the Webfinger <a class='info' href='#Webfinger'>[Webfinger]<span> (</span><span class='info'>Fitzpatrick, B., Hammer-Lahav, E., Cook, B., Panzer, J., and J. Gregorio, &ldquo;The Webfinger Protocol,&rdquo; .</span><span>)</span></a>
           XRD document associated with a user.
 </p>
 <p>Example in a user's XRD file:  </p>
 <div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
 &lt;XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0"&gt;
   &lt;Subject&gt;acct:bob@example.com&lt;/Subject&gt;
-  &lt;Link&gt;
-    &lt;Rel&gt;http://salmon-protocol.org/ns/salmon-mention&lt;/Rel&gt;
-    &lt;URI&gt;https://example.com/mention-handler&lt;/URI&gt;
-  &lt;/Link&gt;
+  &lt;Link rel="http://salmon-protocol.org/ns/salmon-mention"
+    href="https://example.com/mention-handler" /&gt;
 &lt;/XRD&gt;
 </pre></div><p>
 
@@ -406,7 +404,7 @@ Content-Type: application/magic-envelope+xml
 
 &lt;?xml version='1.0' encoding='UTF-8'?&gt;
 &lt;me:env xmlns:me='http://salmon-protocol.org/ns/magic-env'&gt;
-  &lt;me:data type='application/atom+xml' encoding='base64url'&gt;
+  &lt;me:data type='application/atom+xml'&gt;
     PD94bWwgdmVyc2lvbj0nMS4wJyBlbmNvZGluZz0nVVRGLTgnPz4KPGVudHJ5IHhtbG5zPSdod
     HRwOi8vd3d3LnczLm9yZy8yMDA1L0F0b20nPgogIDxpZD50YWc6ZXhhbXBsZS5jb20sMjAwOT
     pjbXQtMC40NDc3NTcxODwvaWQ-ICAKICA8YXV0aG9yPjxuYW1lPnRlc3RAZXhhbXBsZS5jb20
@@ -419,6 +417,7 @@ Content-Type: application/magic-envelope+xml
     iAgPHRpdGxlPlNhbG1vbiBzd2ltIHVwc3RyZWFtITwvdGl0bGU-CiAgPHVwZGF0ZWQ-MjAwOS
     0xMi0xOFQyMDowNDowM1o8L3VwZGF0ZWQ-CjwvZW50cnk-CiAgICA=
   &lt;/me:data&gt;
+  &lt;me:encoding&gt;base64url&lt;/me:encoding&gt;
   &lt;me:alg&gt;RSA-SHA256&lt;/me:alg&gt;
   &lt;me:sig&gt;
     cAIu8VKIhs3WedN91L3ynLT3GbZFhbVidDn-skGetENVH-3EguaYIjlPTq7Ieraq4SD
@@ -434,7 +433,7 @@ Content-Type: application/magic-envelope+xml
 </p>
 <p>[TODO: Describe how this works with two legged OAuth as well; OAuth is
      optional in
-     general though endpoints can require it or rate-limit or treat different
+     general though Salmon endpoints can require it or rate-limit or treat different
      levels of auth'd generators differently.  In general OAuth provides for the
      ability to identify the generator and if missing, or if using something
      like the Google anonymous OAuth consumer, can be considered to be
@@ -445,10 +444,12 @@ Content-Type: application/magic-envelope+xml
 <a name="rfc.section.5"></a><h3>5.&nbsp;
 Reply Endpoint Semantics</h3>
 
-<p>The endpoint responds to the salmon with standard HTTP codes, which are
+<p>The Salmon endpoint responds to the salmon with standard HTTP codes,
+        which are
         detailed in the subsequent sections.
 
-        The semantics of a successful POST is dependent on the endpoint server.
+        The semantics of a successful POST is dependent on the Salmon endpoint
+        server.
         The Salmon client's responsibility ends once it receives a 2xx response.
         A possible, and expected, result is for the salmon to be re-published
         and re-syndicated along with other native comments on the syndicated
@@ -548,17 +549,17 @@ Salmon Verification Requirements</h3>
         </p>
 <ol class="text">
 <li>REQUIRED: Verify the OAuth token, if any, used for the
-            POST request.  Error if provided: 401 Unauthorized.
+            POST request.  Error code (if provided): 401 Unauthorized.
             Note: The server MAY provisionally accept the salmon at this
             point and return a 202 Accepted response.  This allows the
             server to perform the subsequent steps asynchronously.
 </li>
 <li>REQUIRED: Verify the magic signature using <a class='info' href='#MagicSig'>[MagicSig]<span> (</span><span class='info'>Panzer, J. and B. Laurie, &ldquo;Magic Signatures,&rdquo; .</span><span>)</span></a>.  If this verification fails, the
             salmon SHOULD NOT be publicly
-            re-published.  Error if provided: 400 Bad Request.  The server
+            re-published.  Error code (if provided): 400 Bad Request.  The server
             MAY provide a human readable string in the response body.
             This step may be outsourced to a trusted third party verification
-            service.  Note that if the salmon generator is also the salmon
+            service.Note that if the salmon generator is also the salmon
             author's identity provider, it can be considered to have fulfilled
             this step.  Therefore if the receiver trusts the salmon generator
             and can verify that is the author's identity provider, it
@@ -569,23 +570,23 @@ Salmon Verification Requirements</h3>
             signing key.
             The timestamp SHOULD be no more than one hour behind the current
             time, and the signing key's validity period MUST cover the
-            atom:updated timestamp.  Error if provided: 400 Bad Request.  The
+            atom:updated timestamp.  Error code (if provided): 400 Bad Request.  The
             server MAY provide a human readable string in the response body.
 </li>
 <li>OPTIONAL: Perform rate limiting based on
             verified information such as the identity of the salmon generator
-            or the identity of the author.  Error if provided:
+            or the identity of the author.  Error code (if provided):
             402 Payment Required (just kidding, actually 400).
 </li>
 <li>OPTIONAL: Perform abuse and spam control based on
-            message content and other signals. Error if provided: 400 Bad
+            message content and other signals. Error code (if provided): 400 Bad
             Request.
 </li>
 <li>REQUIRED: Perform de-duplication of salmon to
             allow for updates and prevent content loops; see
             <a class='info' href='#SIDD'>Section&nbsp;8<span> (</span><span class='info'>Salmon Identification and De-Duplication</span><span>)</span></a>.
             If the server cannot determine a guid using these
-            mechanisms it fails this step. Error if provided:
+            mechanisms it fails this step. Error code (if provided):
             400 Bad Request.
 </li>
 </ol><p>
@@ -674,7 +675,8 @@ Salmon Identification and De-Duplication</h3>
 <a name="rfc.section.9"></a><h3>9.&nbsp;
 Salmon Reply Republishing Requirements</h3>
 
-<p>The goal of these requirements is to allow endpoints, generators, and
+<p>The goal of these requirements is to allow Salmon endpoints,
+        generators, and
         syndicators to co-operate to present a unified view of the distributed
         conversation around a topic represented by a feed entry.
 </p>
@@ -776,7 +778,8 @@ Security Considerations</h3>
         itself a defense.  Specifically, every salmon has verifiable author,
         associated author identity provider identifier, and generator identifier
         URIs.  It also incorporates timestamps in the signed data.  Since
-        POSTing a salmon to an endpoint is idempotent from a security point of
+        POSTing a salmon to a Salmon endpoint is idempotent from a
+        security point of
         view, replay attacks can be categorized as [what's the correct term for
         a DOS attack via legitimate but overwhelming traffic?].
 </p>
@@ -825,7 +828,7 @@ Security Considerations</h3>
 <tr><td class="author-text" valign="top"><a name="WebLinking">[WebLinking]</a></td>
 <td class="author-text">Nottingham, M., &ldquo;<a href="http://tools.ietf.org/html/draft-nottingham-http-link-header-07">Web Linking I-D, draft 7</a>.&rdquo;</td></tr>
 <tr><td class="author-text" valign="top"><a name="Webfinger">[Webfinger]</a></td>
-<td class="author-text">Gregorio, J., Panzer, J., Fitzpatrick, B., and B. Cook, &ldquo;<a href="http://code.google.com/p/webfinger/wiki/WebFingerProtocol">The Webfinger Protocol</a>.&rdquo;</td></tr>
+<td class="author-text">Fitzpatrick, B., Hammer-Lahav, E., Cook, B., Panzer, J., and J. Gregorio, &ldquo;<a href="http://code.google.com/p/webfinger/wiki/WebFingerProtocol">The Webfinger Protocol</a>.&rdquo;</td></tr>
 <tr><td class="author-text" valign="top"><a name="XRD">[XRD]</a></td>
 <td class="author-text">Hammer-Lahav, E. and W. Norris, &ldquo;<a href="http://tools.oasis-open.org/version-control/browse/wsvn/xri/xrd/1.0/drafts/wd13/xrd-1.0-wd13.html">Extensible Resource Descriptor (XRD) Version 1.0, Working Draft
             13</a>.&rdquo;</td></tr>

@@ -86,7 +86,7 @@ xml2rfc.tcl draft-panzer-salmon-00.xml draft-panzer-salmon-00.html -->
           <t hangText="salmon:">A signed entry.</t>
           <t hangText="Salmon generator:">A service or agent that creates new
             salmon on behalf of a user.</t>
-          <t hangText="endpoint:">A URL to which a salmon is POSTed via
+          <t hangText="Salmon endpoint:">A URL to which a salmon is POSTed via
             HTTP.</t>
           <t hangText="aggregator:">A service or client which aggregates
             multiple streams of content from other services in order to present
@@ -143,10 +143,8 @@ xml2rfc.tcl draft-panzer-salmon-00.xml draft-panzer-salmon-00.html -->
         <t>Example in a user's XRD file:  <figure><artwork><![CDATA[
 <XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0">
   <Subject>acct:bob@example.com</Subject>
-  <Link>
-    <Rel>http://salmon-protocol.org/ns/salmon-mention</Rel>
-    <URI>https://example.com/mention-handler</URI>
-  </Link>
+  <Link rel="http://salmon-protocol.org/ns/salmon-mention"
+    href="https://example.com/mention-handler" />
 </XRD>
 ]]></artwork></figure></t>
       </section>
@@ -199,7 +197,7 @@ Content-Type: application/magic-envelope+xml
 
 <?xml version='1.0' encoding='UTF-8'?>
 <me:env xmlns:me='http://salmon-protocol.org/ns/magic-env'>
-  <me:data type='application/atom+xml' encoding='base64url'>
+  <me:data type='application/atom+xml'>
     PD94bWwgdmVyc2lvbj0nMS4wJyBlbmNvZGluZz0nVVRGLTgnPz4KPGVudHJ5IHhtbG5zPSdod
     HRwOi8vd3d3LnczLm9yZy8yMDA1L0F0b20nPgogIDxpZD50YWc6ZXhhbXBsZS5jb20sMjAwOT
     pjbXQtMC40NDc3NTcxODwvaWQ-ICAKICA8YXV0aG9yPjxuYW1lPnRlc3RAZXhhbXBsZS5jb20
@@ -212,6 +210,7 @@ Content-Type: application/magic-envelope+xml
     iAgPHRpdGxlPlNhbG1vbiBzd2ltIHVwc3RyZWFtITwvdGl0bGU-CiAgPHVwZGF0ZWQ-MjAwOS
     0xMi0xOFQyMDowNDowM1o8L3VwZGF0ZWQ-CjwvZW50cnk-CiAgICA=
   </me:data>
+  <me:encoding>base64url</me:encoding>
   <me:alg>RSA-SHA256</me:alg>
   <me:sig>
     cAIu8VKIhs3WedN91L3ynLT3GbZFhbVidDn-skGetENVH-3EguaYIjlPTq7Ieraq4SD
@@ -224,7 +223,7 @@ Content-Type: application/magic-envelope+xml
       per <xref target="RFC4287"/>.</t>
     <t>[TODO: Describe how this works with two legged OAuth as well; OAuth is
      optional in
-     general though endpoints can require it or rate-limit or treat different
+     general though Salmon endpoints can require it or rate-limit or treat different
      levels of auth'd generators differently.  In general OAuth provides for the
      ability to identify the generator and if missing, or if using something
      like the Google anonymous OAuth consumer, can be considered to be
@@ -232,10 +231,12 @@ Content-Type: application/magic-envelope+xml
     </section>
 
     <section anchor="RES" title="Reply Endpoint Semantics">
-      <t>The endpoint responds to the salmon with standard HTTP codes, which are
+      <t>The Salmon endpoint responds to the salmon with standard HTTP codes,
+        which are
         detailed in the subsequent sections.
 
-        The semantics of a successful POST is dependent on the endpoint server.
+        The semantics of a successful POST is dependent on the Salmon endpoint
+        server.
         The Salmon client's responsibility ends once it receives a 2xx response.
         A possible, and expected, result is for the salmon to be re-published
         and re-syndicated along with other native comments on the syndicated
@@ -313,17 +314,17 @@ Content-Type: application/magic-envelope+xml
         checks are:
         <list style="numbers">
           <t>REQUIRED: Verify the OAuth token, if any, used for the
-            POST request.  Error if provided: 401 Unauthorized.
+            POST request.  Error code (if provided): 401 Unauthorized.
             Note: The server MAY provisionally accept the salmon at this
             point and return a 202 Accepted response.  This allows the
             server to perform the subsequent steps asynchronously.</t>
           <t>REQUIRED: Verify the magic signature using <xref
               target="MagicSig"/>.  If this verification fails, the
             salmon SHOULD NOT be publicly
-            re-published.  Error if provided: 400 Bad Request.  The server
+            re-published.  Error code (if provided): 400 Bad Request.  The server
             MAY provide a human readable string in the response body.
             This step may be outsourced to a trusted third party verification
-            service.  Note that if the salmon generator is also the salmon
+            service.Note that if the salmon generator is also the salmon
             author's identity provider, it can be considered to have fulfilled
             this step.  Therefore if the receiver trusts the salmon generator
             and can verify that is the author's identity provider, it
@@ -333,20 +334,20 @@ Content-Type: application/magic-envelope+xml
             signing key.
             The timestamp SHOULD be no more than one hour behind the current
             time, and the signing key's validity period MUST cover the
-            atom:updated timestamp.  Error if provided: 400 Bad Request.  The
+            atom:updated timestamp.  Error code (if provided): 400 Bad Request.  The
             server MAY provide a human readable string in the response body.</t>
           <t>OPTIONAL: Perform rate limiting based on
             verified information such as the identity of the salmon generator
-            or the identity of the author.  Error if provided:
+            or the identity of the author.  Error code (if provided):
             402 Payment Required (just kidding, actually 400).</t>
           <t>OPTIONAL: Perform abuse and spam control based on
-            message content and other signals. Error if provided: 400 Bad
+            message content and other signals. Error code (if provided): 400 Bad
             Request.</t>
           <t>REQUIRED: Perform de-duplication of salmon to
             allow for updates and prevent content loops; see
             <xref target="SIDD"/>.
             If the server cannot determine a guid using these
-            mechanisms it fails this step. Error if provided:
+            mechanisms it fails this step. Error code (if provided):
             400 Bad Request.</t>
         </list>
       </t>
@@ -415,7 +416,8 @@ Content-Type: application/magic-envelope+xml
     </section>
 
     <section anchor="SRRR" title="Salmon Reply Republishing Requirements" >
-      <t>The goal of these requirements is to allow endpoints, generators, and
+      <t>The goal of these requirements is to allow Salmon endpoints,
+        generators, and
         syndicators to co-operate to present a unified view of the distributed
         conversation around a topic represented by a feed entry.</t>
       <t>A common use case is for a salmon to be syndicated in a consolidated
@@ -496,7 +498,8 @@ Content-Type: application/magic-envelope+xml
         itself a defense.  Specifically, every salmon has verifiable author,
         associated author identity provider identifier, and generator identifier
         URIs.  It also incorporates timestamps in the signed data.  Since
-        POSTing a salmon to an endpoint is idempotent from a security point of
+        POSTing a salmon to a Salmon endpoint is idempotent from a
+        security point of
         view, replay attacks can be categorized as [what's the correct term for
         a DOS attack via legitimate but overwhelming traffic?].</t>
       <t>Note that Salmon ties the salmon guid to the author identifier for
@@ -558,16 +561,19 @@ Content-Type: application/magic-envelope+xml
         >
         <front>
           <title>The Webfinger Protocol</title>
-          <author initials="J." surname="Gregorio">
+          <author initials="B." surname="Fitzpatrick">
+            <organization/>
+          </author>
+          <author initials="E." surname="Hammer-Lahav">
+            <organization/>
+          </author>
+          <author initials="B." surname="Cook">
             <organization/>
           </author>
           <author initials="J." surname="Panzer">
             <organization/>
           </author>
-          <author initials="B." surname="Fitzpatrick">
-            <organization/>
-          </author>
-          <author initials="B." surname="Cook">
+          <author initials="J." surname="Gregorio">
             <organization/>
           </author>
         </front>
