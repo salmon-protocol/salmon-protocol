@@ -29,7 +29,7 @@
 {% if not entries %}
 No feeds in the river.  Why don't you add one below?
 {% else %}
-<p>Latest Activity:</p>
+<p>Latest Activity (<a href="#" onclick="javascript:recrawl()">Refresh</a>):</p>
 <div id="entries" class="entries">
 {% for entry in entries %}
     <div class="entry">
@@ -99,6 +99,23 @@ function subscribe(feedField) {
   http_request = new XMLHttpRequest();
   http_request.onreadystatechange = alertContents;
   http_request.open('GET', "/salmonize?feed="+feeduri, true);
+  http_request.send();
+}
+
+function recrawl() {
+  http_request = new XMLHttpRequest();
+  http_request.onreadystatechange = function() {
+    if (http_request.readyState == 4) {
+      if (http_request.status == 200) {
+        window.location.reload();
+      } else {
+        alert('Problem refreshing! O noes!');
+      }
+    }
+  };
+  http_request.open('GET', "/recrawl.do", true);
+
+  showStatus('Updating feeds...')
   http_request.send();
 }
 
