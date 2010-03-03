@@ -22,6 +22,9 @@ handlers:
 - url: /blogproxy
   script: main.py
 
+- url: /recrawl.do
+  script: main.py
+
 - url: /post
   script: main.py
   

@@ -51,21 +51,21 @@ class SalmonizeHandler(webapp.RequestHandler):
   from live feed sources.  However a feed proxy like
   Feedburner could offer Salmon-as-a-service as well.
   """
-  
+
   def get(self):
     feedurl = self.request.get('feed')
     data = feedparser.parse(feedurl)
-    
+
     # Augment with a salmon endpoint. Don't overwrite existing!
     foundsalmon = False
     for link in data.feed.links:
       if link.rel.lower() == 'salmon':
         foundsalmon = True
         break
-    if foundsalmon == False:        
+    if foundsalmon == False:
       endpoint = u'http://'+self.request.headers['Host']+'/post'
       data.feed.links.append({'href' : endpoint,'type': u'application/atom+xml', 'rel': u'salmon'})
-      
+
     # if feedfields.bozo:
     # TODO: Annotate stored data and/or hand back a warning.
 
@@ -73,17 +73,17 @@ class SalmonizeHandler(webapp.RequestHandler):
     self.response.out.write(template.render('atom.xml', data))
     self.response.headers.add_header("Content-Type","application/atom+xml; charset=utf-8")
     self.response.set_status(200)
-    
+
     # Add a fake BlogProxy entry so that we can fetch updated comments for this feed.
     bloggerproxy.addNonBloggerBlogProxy(feedurl)
-    
+
     # And store the entries discovered in our own DB for reference.
     for entry in data.entries:
       e = model.makeEntry(entry,data.feed)
       #logging.info('Made %s from %s',e,entry)
       db.put([e])
       logging.info('Remembering entry with title = "%s", id = "%s", '
-                   'link = "%s"', 
+                   'link = "%s"',
                    e.title, e.entry_id, e.link)
 
 class InputHandler(webapp.RequestHandler):
@@ -119,9 +119,9 @@ class InputHandler(webapp.RequestHandler):
     logging.info('Found %d entries', len(data.entries))
     for entry in data.entries:
       s = model.makeEntry(entry)
- 
+
       referents = model.getTopicsOf(s)
-      
+
       logging.info('Saw %d parents!', referents.count() )
       if referents.count() == 0:
         logging.info('No parent found for %s, returning error to client.',s.entry_id)
@@ -129,11 +129,11 @@ class InputHandler(webapp.RequestHandler):
         self.response.out.write('Bad Salmon, no parent with id '+unicode(s.in_reply_to)+' found -- rejected.\n');
         return
 
-      # Look for parents, update thread_updated if necessary 
+      # Look for parents, update thread_updated if necessary
       for parent in referents:
         logging.info('Saw parent: %s\n',parent)
         if parent.thread_updated < s.updated:
-          parent.thread_updated = s.updated 
+          parent.thread_updated = s.updated
           parent.put()
 
       update_list.append(s)
@@ -162,7 +162,7 @@ class CreateProxyHandler(OAuthHandler):
           'updated': entry.updated.text,
         })
       context['blogs'] = blogs
-      
+
     logging.info("token_store = %s",self.client.blogger.token_store)
     logging.info("OAuth token = %s", self.client.blogger.token_store.find_token("http://www.blogger.com/feeds/"))
 
@@ -170,7 +170,7 @@ class CreateProxyHandler(OAuthHandler):
 
 class SalmonizeBlogHandler(OAuthHandler):
   """Handles XHR request to salmonize a particular blog"""
-  
+
   @aclRequired
   def post(self):
     logging.info('Inside SalmonizeBlogHandler')
@@ -181,7 +181,7 @@ class SalmonizeBlogHandler(OAuthHandler):
     # later use.  Create a proxy URL for the feed that maps to
     # this salmonized feed, and return it.
     logging.info("In SalmonizeBlogHandler, OAuth token = %s", self.client.blogger.token_store.find_token("http://www.blogger.com/feeds/"))
-    
+
     # Retrieve OAuth token stored by the current user, and cache it away for later use
     # when posting comments (only).  Wish we had a way to tell the server we want to restrict
     # the token to certain operations only, it'd be safer.
@@ -190,14 +190,14 @@ class SalmonizeBlogHandler(OAuthHandler):
     bloggerproxy.addBlogProxy(blogid,feeduri,oauth_token,
         'http://'+self.request.headers['Host']+'/blogproxy?id='+blogid,
         self.client)
-    
+
     # Finally, add the blog to the test aggregator (River of Salmon):
-    
+
     self.response.set_status(200)
 
 class RiverHandler(webapp.RequestHandler):
   """Displays a very simple river of Salmon aggregator."""
-  
+
   @aclRequired
   def get(self):
     bloggerproxy.crawlProxiedFeeds()
@@ -221,7 +221,7 @@ class ReplyHandler(webapp.RequestHandler):
     u = users.get_current_user();
     context['user'] = dict(nickname=u.nickname(), email=u.email())
     context['timestamp'] = datetime.datetime.utcnow().isoformat()
-    
+
     # Sign the buffer (XML):
     sig = GenSampleSignature(template.render('reply.html', context))
 
@@ -246,7 +246,7 @@ class LatestHandler(webapp.RequestHandler):
                     'author_name': salmon.author_name,
                     'author_uri': salmon.author_uri,
                     'in_reply_to': salmon.in_reply_to})
-    self.response.out.write(template.render('latest.html',dict(salmon=stuff))) 
+    self.response.out.write(template.render('latest.html',dict(salmon=stuff)))
 
 class AddUserHandler(webapp.RequestHandler):
   """Adds a registered user w/param email, iff current user is an admin.."""
@@ -260,20 +260,27 @@ class AddUserHandler(webapp.RequestHandler):
         self.response.out.write("Added "+e+" to registered users!")
         self.response.set_status(200)
         return
-    
+
     self.response.out.write("Access DENIED!")
     self.response.set_status(400)
 
+class RecrawlHandler(webapp.RequestHandler):
+  """Triggers a recrawl of all the subscriptions handled by blogproxy."""
+
+  def get(self):
+    bloggerproxy.crawlProxiedFeeds()
+
+    self.response.set_status(200)
+
 class MainHandler(webapp.RequestHandler):
   """Main page of the server."""
-  
+
   @aclRequired
   def get(self):
     context = dict(logouturl=users.create_logout_url(self.request.uri))
     self.response.out.write(template.render('index.html',context))
 
-  
-      
+
 application = webapp.WSGIApplication(
   [
     (r'/salmonize', SalmonizeHandler),
@@ -282,6 +289,7 @@ application = webapp.WSGIApplication(
     (r'/setup_proxy', CreateProxyHandler),
     (r'/salmonize_blog', SalmonizeBlogHandler),
     (r'/ros', RiverHandler),
+    (r'/recrawl.do', RecrawlHandler),
     (r'/reply.do', ReplyHandler),
     (r'/adduser', AddUserHandler),
     (r'/', MainHandler),
