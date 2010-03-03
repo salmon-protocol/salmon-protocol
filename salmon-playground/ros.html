@@ -103,20 +103,17 @@ function subscribe(feedField) {
 }
 
 function recrawl() {
-  http_request = new XMLHttpRequest();
-  http_request.onreadystatechange = function() {
-    if (http_request.readyState == 4) {
-      if (http_request.status == 200) {
-        window.location.reload();
-      } else {
-        alert('Problem refreshing! O noes!');
-      }
-    }
-  };
-  http_request.open('GET', "/recrawl.do", true);
-
   showStatus('Updating feeds...')
-  http_request.send();
+  $.ajax({
+    type: "POST",
+    url: "/recrawl.do",
+    success: function(response){
+      window.location.reload();
+    },
+    error: function(xhr, statusText, errorThrown){
+      showStatus("Error "+xhr.status+": "+xhr.responseText);
+    },
+  });
 }
 
 function alertContents() {
