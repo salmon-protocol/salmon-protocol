@@ -105,7 +105,7 @@ function subscribe(feedField) {
 function recrawl() {
   showStatus('Updating feeds...')
   $.ajax({
-    type: "POST",
+    type: "GET",
     url: "/recrawl.do",
     success: function(response){
       window.location.reload();
