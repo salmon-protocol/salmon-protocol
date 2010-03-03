@@ -200,7 +200,6 @@ class RiverHandler(webapp.RequestHandler):
 
   @aclRequired
   def get(self):
-    bloggerproxy.crawlProxiedFeeds()
     N = 500
     context = dict(entries=model.getLatestPosts(N))
     if context['entries']:
