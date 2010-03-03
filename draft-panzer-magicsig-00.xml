@@ -434,7 +434,14 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
 
       &RFC4627;
      
-      <reference anchor="LRDD" target="http://groups.google.com/group/webfinger/browse_thread/thread/9f3d93a479e91bbf"><front><title>LRDD Proposal Draft</title><author initials="EHL" surname="Eran" fullname="Hammer-Lahav"><organization/></author></front></reference>
+      <reference anchor="LRDD"
+        target="http://tools.ietf.org/html/draft-hammer-discovery-04">
+        <front><title>LRDD: Link-based Resource Descriptor Discovery</title>
+          <author initials="E" surname="Eran" fullname="Hammer-Lahav">
+            <organization/>
+          </author>
+        </front>
+      </reference>
 
       <reference anchor="XRD" target="http://tools.oasis-open.org/version-control/browse/wsvn/xri/xrd/1.0/drafts/wd13/xrd-1.0-wd13.html"><front><title>Extensible Resource Descriptor (XRD) Version 1.0, Working Draft 13</title><author initials="EHL" surname="Eran" fullname="Hammer-Lahav"><organization/></author><author initials="WN" surname="Will" fullname="Norris"><organization/></author></front></reference>
 

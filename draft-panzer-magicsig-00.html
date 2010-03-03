@@ -1,6 +1,6 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html lang="en"><head><title>Draft: Magic Signatures</title>
-<meta http-equiv="Expires" content="Thu, 25 Feb 2010 23:17:41 +0000">
+<meta http-equiv="Expires" content="Wed, 03 Mar 2010 01:34:37 +0000">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <meta name="description" content="Magic Signatures">
 <meta name="keywords" content="signatures, PKI">
@@ -146,7 +146,7 @@
 <tr><td class="header">Draft</td><td class="header">J. Panzer, Ed.</td></tr>
 <tr><td class="header">&nbsp;</td><td class="header">B. Laurie</td></tr>
 <tr><td class="header">&nbsp;</td><td class="header">Google Inc.</td></tr>
-<tr><td class="header">&nbsp;</td><td class="header">February 25, 2010</td></tr>
+<tr><td class="header">&nbsp;</td><td class="header">February 2010</td></tr>
 </table></td></tr></table>
 <h1><br />Magic Signatures</h1>
 
@@ -158,7 +158,7 @@
 </p>
 <p>It is intended to be a building block in the construction of other protocols, providing
          a commonly agreed upon abstraction layer on top of lower level protocols such as 
-         <a class='info' href='#LRDD'>Webfinger/LRDD<span> (</span><span class='info'>Eran, EHL., &ldquo;LRDD Proposal Draft,&rdquo; .</span><span>)</span></a> [LRDD], <a class='info' href='#XRD'>XRD<span> (</span><span class='info'>Eran, EHL. and WN. Will, &ldquo;Extensible Resource Descriptor (XRD) Version 1.0, Working Draft 13,&rdquo; .</span><span>)</span></a> [XRD], 
+         <a class='info' href='#LRDD'>Webfinger/LRDD<span> (</span><span class='info'>Eran, E., &ldquo;LRDD: Link-based Resource Descriptor Discovery,&rdquo; .</span><span>)</span></a> [LRDD], <a class='info' href='#XRD'>XRD<span> (</span><span class='info'>Eran, EHL. and WN. Will, &ldquo;Extensible Resource Descriptor (XRD) Version 1.0, Working Draft 13,&rdquo; .</span><span>)</span></a> [XRD], 
          and <a class='info' href='#RFC3447'>PKCS<span> (</span><span class='info'>Jonsson, J. and B. Kaliski, &ldquo;Public-Key Cryptography Standards (PKCS) #1: RSA Cryptography Specifications Version 2.1,&rdquo; February&nbsp;2003.</span><span>)</span></a> [RFC3447].
 </p><a name="toc"></a><br /><hr />
 <h3>Table of Contents</h3>
@@ -677,7 +677,7 @@ Discovery</h3>
         
 </p>
 <p>Given an identifier such as acct:bob@example.com or http://example.org/, first perform discovery
-        per <a class='info' href='#LRDD'>LRDD<span> (</span><span class='info'>Eran, EHL., &ldquo;LRDD Proposal Draft,&rdquo; .</span><span>)</span></a> [LRDD].  Once an XRD for the identifier is located, retrieve the href value(s) for
+        per <a class='info' href='#LRDD'>LRDD<span> (</span><span class='info'>Eran, E., &ldquo;LRDD: Link-based Resource Descriptor Discovery,&rdquo; .</span><span>)</span></a> [LRDD].  Once an XRD for the identifier is located, retrieve the href value(s) for
         all links with rel="magic-public-key".  Each identified resource is a valid public signing key.
 </p>
 <p>Note that the data: URI scheme MAY be used, so that a public key can be embedded completely within
@@ -748,7 +748,7 @@ References</h3>
 <h3>14.1.&nbsp;Normative References</h3>
 <table width="99%" border="0">
 <tr><td class="author-text" valign="top"><a name="LRDD">[LRDD]</a></td>
-<td class="author-text">Eran, EHL., &ldquo;<a href="http://groups.google.com/group/webfinger/browse_thread/thread/9f3d93a479e91bbf">LRDD Proposal Draft</a>.&rdquo;</td></tr>
+<td class="author-text">Eran, E., &ldquo;<a href="http://tools.ietf.org/html/draft-hammer-discovery-04">LRDD: Link-based Resource Descriptor Discovery</a>.&rdquo;</td></tr>
 <tr><td class="author-text" valign="top"><a name="RFC2045">[RFC2045]</a></td>
 <td class="author-text"><a href="mailto:ned@innosoft.com">Freed, N.</a> and <a href="mailto:nsb@nsb.fv.com">N. Borenstein</a>, &ldquo;<a href="http://tools.ietf.org/html/rfc2045">Multipurpose Internet Mail Extensions (MIME) Part One: Format of Internet Message Bodies</a>,&rdquo; RFC&nbsp;2045, November&nbsp;1996 (<a href="ftp://ftp.isi.edu/in-notes/rfc2045.txt">TXT</a>).</td></tr>
 <tr><td class="author-text" valign="top"><a name="RFC2119">[RFC2119]</a></td>
@@ -758,9 +758,9 @@ References</h3>
 <tr><td class="author-text" valign="top"><a name="RFC3552">[RFC3552]</a></td>
 <td class="author-text">Rescorla, E. and B. Korver, &ldquo;<a href="http://tools.ietf.org/html/rfc3552">Guidelines for Writing RFC Text on Security Considerations</a>,&rdquo; BCP&nbsp;72, RFC&nbsp;3552, July&nbsp;2003 (<a href="ftp://ftp.isi.edu/in-notes/rfc3552.txt">TXT</a>).</td></tr>
 <tr><td class="author-text" valign="top"><a name="RFC4627">[RFC4627]</a></td>
-<td class="author-text">Crockford, D., &ldquo;<a href="http://tools.ietf.org/html/rfc4627">The application/json Media Type for JavaScript Object Notation (JSON)</a>,&rdquo; RFC&nbsp;4627, July&nbsp;2006 (<a href="ftp://ftp.isi.edu/in-notes/rfc4627.txt">TXT</a>).</td></tr>
+<td class="author-text">Crockford, D., &ldquo;<a href="http://tools.ietf.org/html/rfc4627">The application/json Media Type for JavaScript Object Notation (JSON)</a>,&rdquo; RFC&nbsp;4627, July&nbsp;2006 (<a href="ftp://ftp.rfc-editor.org/in-notes/rfc4627.txt">TXT</a>).</td></tr>
 <tr><td class="author-text" valign="top"><a name="RFC4648">[RFC4648]</a></td>
-<td class="author-text">Josefsson, S., &ldquo;<a href="http://tools.ietf.org/html/rfc4648">The Base16, Base32, and Base64 Data Encodings</a>,&rdquo; RFC&nbsp;4648, October&nbsp;2006 (<a href="ftp://ftp.isi.edu/in-notes/rfc4648.txt">TXT</a>).</td></tr>
+<td class="author-text">Josefsson, S., &ldquo;<a href="http://tools.ietf.org/html/rfc4648">The Base16, Base32, and Base64 Data Encodings</a>,&rdquo; RFC&nbsp;4648, October&nbsp;2006 (<a href="ftp://ftp.rfc-editor.org/in-notes/rfc4648.txt">TXT</a>).</td></tr>
 <tr><td class="author-text" valign="top"><a name="XRD">[XRD]</a></td>
 <td class="author-text">Eran, EHL. and WN. Will, &ldquo;<a href="http://tools.oasis-open.org/version-control/browse/wsvn/xri/xrd/1.0/drafts/wd13/xrd-1.0-wd13.html">Extensible Resource Descriptor (XRD) Version 1.0, Working Draft 13</a>.&rdquo;</td></tr>
 </table>
