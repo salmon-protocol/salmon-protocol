@@ -25,7 +25,7 @@ from google.appengine.ext import db
 
 class Entry(db.Model):
   """Generic RSS/Atom feed entry.  Semantics are mostly
-     those of atom:entry.  Any Entry can be either a
+     those of atom:entry.  Any Entry can be either a 
      standalone post or a Salmon (a reply to a post).
      A Salmon always has a topic_id, which is just the
      id of a standalone post which is the ultimate
@@ -52,7 +52,7 @@ def getLinkRel(fields,relval):
     # TODO: Can there be multiple rel names in an elem.rel?  Double check.
     return [elem for elem in fields.get('links') if elem.get('rel') == relval]
   else:
-    return []
+    return ()
 
 def getSalmonEndpoint(entryfields,feedfields):
   """Determines Salmon endpoint, if any, for the given entry in the given feed.
@@ -91,7 +91,7 @@ def makeEntry(fields, feedfields=None):
   updated_parsed = fields.updated_parsed
   author_detail = fields.get('author_detail','')
   author_name = author_detail.get('name','(anonymous)') if author_detail else ''
-  author_uri = author_detail.get('href','') if author_detail else ''  # What URI do you use for anonymous?
+  author_uri = author_detail.get('href','') if author_detail else ''  # What URI do you use for anonymous?	
   updated_tm = datetime.datetime(*updated_parsed[0:5])
   signature = (fields.get("signature") or None)
   endpoint = getSalmonEndpoint(fields,feedfields)
@@ -110,9 +110,9 @@ def makeEntry(fields, feedfields=None):
             salmonendpoint=endpoint,
             topic_id=entry_id,
             in_reply_to=in_reply_to)
-
+      
   logging.info('About to return entry %s',e)
-
+    
   return e
 
 #TODO: Is "Topic" too confusing compared to PuSH usage?
@@ -134,3 +134,4 @@ def getRepliesTo(e,N):
 def getEntryById(id):
   entries=Entry.gql('WHERE entry_id=:1 ORDER BY updated',id).fetch(1)
   return entries[0]
+  
