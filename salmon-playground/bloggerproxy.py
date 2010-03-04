@@ -50,7 +50,7 @@ class BlogProxy(db.Model):
 def getSalmonizedFeedDataForBlogId(id):
   bp = BlogProxy.all().filter('blog_id =', id).fetch(1)[0]
   feed_to_fetch = bp.feed_uri
-  
+
   # Change any Blogger proxied feed into its canonical /feeds/posts/default
   # form if atom.xml to start with; then add ?dontredirect to the end.
   # This is fragile but hey, this is just a demo, right?
@@ -59,35 +59,36 @@ def getSalmonizedFeedDataForBlogId(id):
   if m:
     feed_to_fetch = m.group(1)+'/feeds/posts/default'
   feed_to_fetch = feed_to_fetch + '?dontredirect'
-  
+
   data = feedparser.parse(feed_to_fetch)
   if data.bozo:
+    # TODO: Do something about feeds that go bad?
     logging.error("Feed %s is not well formed; soldiering on anyway.",feed_to_fetch)
-  
-  # Augment with a salmon endpoint. TODO: Don't overwrite existing!
-  data.feed.links.append({'href' : bp.proxy_url,'type': u'application/atom+xml', 'rel': u'salmon'})
+  else:
+    # Augment with a salmon endpoint. TODO: Don't overwrite existing!
+    data.feed.links.append({'href' : bp.proxy_url,'type': u'application/atom+xml', 'rel': u'salmon'})
 
   return data
 
 class BlogProxyHandler(oauth.OAuthHandler):
-  
+
   def get(self):
     data = getSalmonizedFeedDataForBlogId(self.request.get('id'))
     self.response.headers["Content-Type"] = "application/atom+xml; charset=utf-8"
     self.response.out.write(template.render('atom.xml', data))
     self.response.set_status(200)
-  
+
   def post(self):
     # Take care of incoming salmon
     # pull out oauth token, fire up OAuth client, identify
     # the particular post in question and its comment stream,
     # create an entry, and post a comment.
     blog_id = self.request.get('id')
-    
+
     body = self.request.body.decode('utf-8')
-    
+
     logging.info('Salmon body is:\n%s\n----', body);
-    
+
     data = feedparser.parse(body)
     logging.info('Data parsed was:\n%s\n----',data)
     if data.bozo:
@@ -99,22 +100,22 @@ class BlogProxyHandler(oauth.OAuthHandler):
         line = data.bozo_exception.getLineNumber()
         logging.error('Line %d: %s', line, data.bozo_exception.getMessage())
       return self.response.set_status(400)
-    
+
     logging.info('Found %d entries', len(data.entries))
     for entry in data.entries:
       s = model.makeEntry(entry)
-      
+
       referents = model.getTopicsOf(s)
-      
+
       logging.info('Saw %d parent(s)', referents.count() )
       if referents.count() == 0:
         logging.info('No parent found for %s, returning error to client.',s.entry_id)
         self.response.set_status(400)
         self.response.out.write('Bad Salmon, no parent with id '+unicode(s.in_reply_to)+' found -- rejected.\n');
         return
-    
+
     # Pull body & other info out of salmon
-    
+
     # Create an Atom entry and post as a comment
     text = s.content
     # TODO: Fix Blogger so it accepts acct: URIs... sigh...
@@ -124,7 +125,7 @@ class BlogProxyHandler(oauth.OAuthHandler):
     #  author_uri = author_uri.replace("acct:","http://")
     text = text + ' by <a href="'+author_uri+'">'+name+'</a>'
     entry = atom.Entry(content=atom.Content(text=text))
-    
+
     # Grab the entry ID from the in-reply-to element of the salmon
     p = re.compile('tag:blogger\.com,1999:blog-(\d+)\.post-(\d+)')
     m = p.match(s.in_reply_to)
@@ -133,16 +134,16 @@ class BlogProxyHandler(oauth.OAuthHandler):
       return
     blog_id = m.group(1)
     post_id = m.group(2)
-    
+
     logging.info("About to post comment to blog %s, post %s",blog_id,post_id)
-    
+
     # Grab auth info from DB (this is also an ACL check...)
     bp = BlogProxy.all().filter('blog_id =', blog_id).fetch(1)[0]
     origfeed = bp.feed_uri
     tokens = pickle.loads(bp.pickled_tokens)
     oauth_token = tokens["http://www.blogger.com/feeds/"]
     # TODO: Add some error checking, for Ghu's sake.
-    
+
     # Let's see if override_token, at least, does what it says in this hall of
     # funhouse mirrors we call a GData client:
     self.client.blogger.override_token = oauth_token
@@ -153,7 +154,7 @@ class BlogProxyHandler(oauth.OAuthHandler):
 
 def modifyBlogRedirectUrl(blog_id, proxy_url, client):
   """ Modifies the given blog settings to make the feed redirect to the given proxy. """
-  
+
   # The basic idea here is to PUT a new value to the Atom entry defined at
   # /feeds/blogid/settings/BLOG_FEED_REDIRECT_URL, which updates it.  I'm not sure
   # why the code also needs to see the BLOG_FEED_REDIRECT_URL name in the id as well
@@ -170,9 +171,9 @@ def addBlogProxy(blog_id,feed_uri,oauth_access_token,proxy_url,client):
   # First clear out any existing proxy entries with this blog_id:
   existing = BlogProxy.all().filter("blog_id = ",blog_id).fetch(100)
   db.delete(existing)
-  
+
   feed_uri = feed_uri+'?dontredirect'
-  
+
   # Create an entry for this proxied feed:
   pickled_tokens = pickle.dumps({"http://www.blogger.com/feeds/": oauth_access_token})
   bp = BlogProxy(blog_id=blog_id,
@@ -180,15 +181,15 @@ def addBlogProxy(blog_id,feed_uri,oauth_access_token,proxy_url,client):
                  pickled_tokens=pickled_tokens,
                  proxy_url=proxy_url)
   bp.put()
-  
+
   # Now update the original blog to redirect to the proxy:
   modifyBlogRedirectUrl(blog_id,proxy_url,client)
-  
+
 def addNonBloggerBlogProxy(feed_uri):
   # First clear out any existing proxy entries with this uri:
   existing = BlogProxy.all().filter("blog_id = ",feed_uri).fetch(100)
   db.delete(existing)
-  
+
   bp = BlogProxy(blog_id=feed_uri,
                  feed_uri=feed_uri,
                  proxy_url=feed_uri)
@@ -204,13 +205,13 @@ def crawlFeedAndComments(feedurl,data,hacked_in_reply_to_override=None):
         hasattr(data.bozo_exception, 'getMessage')):
       line = data.bozo_exception.getLineNumber()
       logging.warning('Line %d: %s', line, data.bozo_exception.getMessage())
-      
+
   update_list = []
   for entry in data.entries:
     # TODO: Get rid of this if/when feedparser is fixed
     if hacked_in_reply_to_override:
       entry['in-reply-to'] = hacked_in_reply_to_override
-      
+
     e = model.makeEntry(entry,data.feed)
     #logging.info("Made an entry, salmon endpoint = %s",e.salmonendpoint)
     update_list.append(e)
@@ -220,7 +221,7 @@ def crawlFeedAndComments(feedurl,data,hacked_in_reply_to_override=None):
     for f in commentfeeds:
       if f.type == 'application/atom+xml':
         # TODO: Discover most recent comment from this and use to update last active timestamp
-        crawlFeedAndComments(f,feedparser.parse(f.href),entry.id)    
+        crawlFeedAndComments(f,feedparser.parse(f.href),entry.id)
   db.put(update_list)
 
 def crawlProxiedFeeds():
@@ -229,11 +230,10 @@ def crawlProxiedFeeds():
   proxied = BlogProxy.all().fetch(500)  # Just for testing, later on would need a real crawler or PSH
   for bp in proxied:
     logging.info("-->Crawling %s",bp.feed_uri)
-    
+
     # Crawl what the proxy _would_ redirect us to, to speed things up.
     data = getSalmonizedFeedDataForBlogId(bp.blog_id)
     logging.info("Sample post links: %s",data.entries[0].links)
     crawlFeedAndComments(bp.feed_uri,data)
 
   logging.info("Completed crawling all feeds")
-
