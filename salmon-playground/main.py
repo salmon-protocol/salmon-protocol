@@ -35,6 +35,7 @@ from oauth import OAuthDanceHandler, OAuthHandler, requiresOAuth
 
 # Demos
 import magicsigdemo
+import magicsigalg
 
 #Data model
 import model
@@ -222,7 +223,7 @@ class ReplyHandler(webapp.RequestHandler):
     context['timestamp'] = datetime.datetime.utcnow().isoformat()
 
     # Sign the buffer (XML):
-    sig = GenSampleSignature(template.render('reply.html', context))
+    sig = magicsigalg.GenSampleSignature(template.render('reply.html', context))
 
     # Add signature to XML & write out augmented XML:
     context['signature'] = sig
