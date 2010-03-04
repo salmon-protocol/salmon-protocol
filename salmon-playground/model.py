@@ -52,7 +52,7 @@ def getLinkRel(fields,relval):
     # TODO: Can there be multiple rel names in an elem.rel?  Double check.
     return [elem for elem in fields.get('links') if elem.get('rel') == relval]
   else:
-    return ()
+    return []
 
 def getSalmonEndpoint(entryfields,feedfields):
   """Determines Salmon endpoint, if any, for the given entry in the given feed.
