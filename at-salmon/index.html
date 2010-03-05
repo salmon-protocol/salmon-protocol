@@ -1,0 +1,84 @@
+<html>
+<head>
+  <link rel="stylesheet" href="./css/ui-darkness/jquery-ui-1.8rc3.custom.css"/>
+	<style type="text/css">
+    body {
+      font-size: 12px;
+    }
+    #tabs, #user {
+      width:400px;
+      margin-left:auto;
+      margin-right:auto;
+    }
+    #user {
+      margin-top:1em;
+      margin-bottom:1em;
+      font-size:18pt;
+    }
+    #comments li, #mentions li {
+      list-style: none;
+      margin:1em 0 1em 0;
+    }
+    #comments li p, #mentions li p {
+      padding:1em;
+      background: #666;      
+    }
+	</style>
+<script src="js/jquery-1.4.2.min.js"></script>
+<script src="js/jquery-ui-1.8rc3.custom.min.js"></script>
+	<script>
+	  $(function() {
+      $("#tabs").tabs();
+	  });
+
+  function log(msg) {
+    $("#log").append(msg + "<br/>");
+  }
+	</script>
+</head>
+  <body>
+    <div id='user'>
+      You are logged in as {{ user }}.
+      <br/>
+      <a href="{{ logout_url }}">Log out</a>
+    </div>
+    <div id="tabs">
+    	<ul>
+    		<li><a href="#tabs-comments">Leave a Comment</a></li>
+    		<li><a href="#tabs-mentions">Mentions of You</a></li>
+    	</ul>
+    	<div id="tabs-comments">
+        <form id='comment-form' action="/comment" method="post">
+          <div><textarea id="comment-text" name="comment-text" rows="3" cols="60"></textarea></div>
+          <div><input id="submit-button" type="submit" value="Post Comment"></div>
+        </form>
+        <ul id="comments">
+          {% for comment in comments %}
+            <li class='comment'>
+              <p>
+            {{ comment.decorated_content }}
+              </p>
+            by <a href="/comments-by/{{comment.author|urlencode}}">{{ comment.author }}</a>
+            at {{ comment.posted_at }}
+            </li>
+          {% endfor %}
+        </ul>
+    	</div>
+    	<div id="tabs-mentions">
+        <ul id="mentions">
+          {% for comment in mentions %}
+          <li class='comment'>
+            <p>
+          {{ comment.decorated_content }}
+            </p>
+          by <a href="/comments-by/{{comment.author|urlencode}}">{{ comment.author }}</a>
+          at {{ comment.posted_at }}
+          </li>
+          {% endfor %}
+        </ul>
+    	</div>
+    </div>    
+    
+    <div id='log'></div>
+  </body>
+</html>
