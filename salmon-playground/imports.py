@@ -3,6 +3,7 @@
 # Adjust the import paths for third_party and using Google protobufs
 #
 # Copyright 2009 DeWitt Clinton
+# Modified 2010 John Panzer
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -21,9 +22,12 @@ import sys
 
 APP_DIR = os.path.abspath(os.path.dirname(__file__))
 
+PYLIB = os.path.join(APP_DIR, 'lib/python')
 THIRD_PARTY = os.path.join(APP_DIR, 'third_party')
 
+sys.path.insert(0, PYLIB)
 sys.path.insert(0, THIRD_PARTY)
+
 
 if 'google' in sys.modules:
   orig_google_module = sys.modules['google']
