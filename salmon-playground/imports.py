@@ -22,7 +22,7 @@ import sys
 
 APP_DIR = os.path.abspath(os.path.dirname(__file__))
 
-PYLIB = os.path.join(APP_DIR, 'lib/python')
+PYLIB = os.path.join(APP_DIR, 'lib')
 THIRD_PARTY = os.path.join(APP_DIR, 'third_party')
 
 sys.path.insert(0, PYLIB)

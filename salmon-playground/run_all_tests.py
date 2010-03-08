@@ -19,11 +19,10 @@ __author__ = 'jpanzer@google.com (John Panzer)'
 
 
 import module_test_runner
-import test_signatures
 
 def RunAllTests():
   test_runner = module_test_runner.ModuleTestRunner()
-  test_runner.modules = [test_signatures]
+  test_runner.modules = []
   test_runner.RunAllTests()
 
 if __name__ == '__main__':
