@@ -17,6 +17,8 @@
 
 """Quick demo of magic signatures for Salmon."""
 
+import imports
+
 import logging
 import random
 import datetime
@@ -80,7 +82,7 @@ class SignThisHandler(webapp.RequestHandler):
 
       # Do an ACL check to see if current user is the author:
       if not self.magicenv.CheckAuthorship(data,
-          magicsig._NormalizeUserIdToUri(userid)):
+          magicsig.NormalizeUserIdToUri(userid)):
         logging.info("Authorship check failed for user %s\n",userid)
         self.response.set_status(400)
         self.response.out.write("User "+userid+" not first author of entry,"

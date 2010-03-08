@@ -370,15 +370,15 @@ def _create_suite(package_name, test_name, test_dir):
 def _load_default_test_modules(test_dir):
     if not test_dir in sys.path:
         sys.path.append(test_dir)
-    module_names = [mf[0:-3] for mf in os.listdir(test_dir) if mf.endswith(".py")]
+    module_names = [mf[0:-3] for mf in os.listdir(test_dir) if mf.endswith(".py") ]
     return [reload(__import__(name)) for name in module_names]
 
 def _load_local_test_modules():
-    '''Load anything *_test.py in project directory'''
+    '''Load any test modules in project directory'''
     if not '.' in sys.path:
       sys.path.append('.')
     module_names= [mf[0:-3] for mf in os.listdir('.') if
-                   md.endswith("_test.py")]
+                   md.endswith("_test.py") or  (md.endswith(".py") and md.startswith("test_")) ]
     return [reload(__import__(name)) for name in module_names]
 
 def _get_tests_from_suite(suite, tests):

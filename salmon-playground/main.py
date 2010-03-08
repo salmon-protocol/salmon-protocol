@@ -17,6 +17,8 @@
 
 """Simple subscriber that aggregates all feeds together and demonstrates Salmon."""
 
+import imports
+
 import logging
 import random
 import datetime
@@ -36,7 +38,7 @@ from oauth import OAuthDanceHandler, OAuthHandler, requiresOAuth
 
 # Demos
 import magicsigdemo
-import magicsigalg
+from magicsig import magicsigalg #TODO get rid of this, should not be used
 
 #Data model
 import model
