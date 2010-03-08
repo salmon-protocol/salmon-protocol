@@ -224,16 +224,17 @@ def crawlFeedAndComments(feedurl,data,hacked_in_reply_to_override=None):
         crawlFeedAndComments(f,feedparser.parse(f.href),entry.id)
   db.put(update_list)
 
-def crawlProxiedFeeds():
-  """Crawls and caches all proxied feeds as necessary, so they show up in river"""
-  logging.info("Started crawling all feeds")
-  proxied = BlogProxy.all().fetch(500)  # Just for testing, later on would need a real crawler or PSH
-  for bp in proxied:
-    logging.info("-->Crawling %s",bp.feed_uri)
+def crawlProxiedFeed(feed_id):
+  """Crawls and caches the specified proxy feed.
 
-    # Crawl what the proxy _would_ redirect us to, to speed things up.
-    data = getSalmonizedFeedDataForBlogId(bp.blog_id)
-    logging.info("Sample post links: %s",data.entries[0].links)
-    crawlFeedAndComments(bp.feed_uri,data)
+  Args:
+    feed_id: db.Key for feed Entry.
+  """
+  logging.info("Started crawling feed: " + str(feed_id))
 
-  logging.info("Completed crawling all feeds")
+  bp = BlogProxy.get(feed_id)
+
+  # Crawl what the proxy _would_ redirect us to, to speed things up.
+  data = getSalmonizedFeedDataForBlogId(bp.blog_id)
+  logging.info("Sample post links: %s",data.entries[0].links)
+  crawlFeedAndComments(bp.feed_uri,data)

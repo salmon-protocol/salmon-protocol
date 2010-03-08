@@ -28,6 +28,7 @@ from google.appengine.ext.webapp.util import login_required
 from google.appengine.ext.webapp import template
 from google.appengine.ext import db
 from google.appengine.api import users
+from google.appengine.api.labs import taskqueue
 import feedparser
 import userdb
 
@@ -268,7 +269,17 @@ class RecrawlHandler(webapp.RequestHandler):
   """Triggers a recrawl of all the subscriptions handled by blogproxy."""
 
   def get(self):
-    bloggerproxy.crawlProxiedFeeds()
+    feed_id = self.request.get('feed_id')
+
+    if feed_id:
+      bloggerproxy.crawlProxiedFeed(db.Key(feed_id))
+    else:
+      proxied = bloggerproxy.BlogProxy.all().fetch(500)
+
+      for bp in proxied:
+        taskqueue.add(url='/recrawl.do',
+                      method='GET',
+                      params=dict(feed_id=bp.key()))
 
     self.response.set_status(200)
 
