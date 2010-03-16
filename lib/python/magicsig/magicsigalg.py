@@ -26,12 +26,11 @@ __author__ = 'jpanzer@google.com (John Panzer)'
 
 import base64
 import re
-import types
 
 # PyCrypto: Note that this is not available in the
 # downloadable GAE SDK, must be installed separately.
 # See http://code.google.com/p/googleappengine/issues/detail?id=2493
-# for why this is most easily installed under the 
+# for why this is most easily installed under the
 # project's path rather than somewhere more sane.
 import Crypto.PublicKey
 import Crypto.PublicKey.RSA
@@ -77,18 +76,36 @@ def _B64ToNum(b64):
   """Turns a urlsafe base64 encoded string into a bignum."""
   return number.bytes_to_long(base64.urlsafe_b64decode(b64))
 
+# Patterns for parsing serialized keys
+_WHITESPACE_RE = re.compile(r'\s+')
+_KEY_RE = re.compile(
+    r"""RSA\.
+      (?P<mod>[^\.]+)
+      \.
+      (?P<exp>[^\.]+)
+      (?:\.
+        (?P<private_exp>[^\.]+)
+      )?""",
+    re.VERBOSE)
+
 
 # Implementation of the Magic Envelope signature algorithm
 class SignatureAlgRsaSha256(object):
   """Signature algorithm for RSA-SHA256 Magic Envelope."""
 
-  def __init__(self, initializer):
-    if isinstance(initializer, types.StringType):
-      self.FromString(initializer)
-    elif isinstance(initializer, types.TupleType):
-      self.keypair = Crypto.PublicKey.RSA.construct(initializer)
+  def __init__(self, rsa_key):
+    """Initializes algorithm with key information.
+
+    Args:
+      rsa_key: Key in either string form or a tuple in the
+               format expected by Crypto.PublicKey.RSA.
+    Raises:
+      ValueError: The input format was incorrect.
+    """
+    if isinstance(rsa_key, tuple):
+      self.keypair = Crypto.PublicKey.RSA.construct(rsa_key)
     else:
-      raise TypeError('Initializer must be string or tuple')
+      self._InitFromString(rsa_key)
 
   def ToString(self, full_key_pair=True):
     """Serializes key to a safe string storage format.
@@ -110,8 +127,8 @@ class SignatureAlgRsaSha256(object):
       private_exp = '.' + _NumToB64(self.keypair.d)
     return 'RSA.' + mod + exp + private_exp
 
-  def FromString(self, text):
-    """Parses key from the standard string storage format.
+  def _InitFromString(self, text):
+    """Parses key from a standard string storage format.
 
     Args:
       text: The key in text form.  See ToString for description
@@ -120,37 +137,71 @@ class SignatureAlgRsaSha256(object):
       ValueError: The input format was incorrect.
     """
     # First, remove all whitespace:
-    text = re.sub('\s+', '', text)
+    text = re.sub(_WHITESPACE_RE, '', text)
 
     # Parse out the period-separated components
-    key_regexp = 'RSA\.([^\.]+)\.([^\.]+)(.([^\.]+))?'
-    m = re.match(key_regexp, text)
-    if not m:
-      raise ValueError('Badly formatted key string: '+text)
+    match = _KEY_RE.match(text)
+    if not match:
+      raise ValueError('Badly formatted key string: "%s"', text)
 
-    (mod, exp) = m.group(1, 2)
-    private_exp = ''
-    if m.group(3):
-      private_exp = m.group(4)
-    self.keypair = Crypto.PublicKey.RSA.construct((_B64ToNum(mod),
-                                                   _B64ToNum(exp),
-                                                   _B64ToNum(private_exp) or
-                                                   None))
+    private_exp = match.group('private_exp')
+    if private_exp:
+      private_exp = _B64ToNum(private_exp)
+    else:
+      private_exp = None
+    self.keypair = Crypto.PublicKey.RSA.construct(
+        (_B64ToNum(match.group('mod')),
+         _B64ToNum(match.group('exp')),
+         private_exp))
 
   def GetName(self):
     """Returns string identifier for algorithm used."""
     return 'RSA-SHA256'
 
-  def Sign(self, bytes_to_sign):
-    """Signs the bytes and returns signature in base64 format."""
-    # Implements the expression:
-    # b64(signature(sha256_digest(bytes_to_sign)))
+  def _MakeEmsaMessageSha256(self, msg, modulus_size):
+    """Algorithm EMSA_PKCS1-v1_5 from PKCS 1 version 2.
 
-    # Sign using the private key (PKCS1-SHA256 signature)
-    sha256_hash_digest = hashlib.sha256(bytes_to_sign).digest()
+    This is derived from keyczar code, and implements the
+    additional ASN.1 compatible magic header bytes and
+    padding needed to implement PKCS1-v1_5.
+
+    Args:
+      msg: The message to sign.
+      modulus_size: The size of the key (in bits) used.
+    Returns:
+      The byte sequence of the message to be signed.
+    """
+    magic_sha256_header = [0x30, 0x31, 0x30, 0xd, 0x6, 0x9, 0x60, 0x86, 0x48,
+                           0x1, 0x65, 0x3, 0x4, 0x2, 0x1, 0x5, 0x0, 0x4, 0x20]
+
+    hash_of_msg = hashlib.sha256(msg).digest()
+
+    encoded = ''.join([chr(c) for c in magic_sha256_header]) + hash_of_msg
+
+    pad_string = chr(0xFF) * (modulus_size / 8 - len(encoded) - 3)
+    return chr(1) + pad_string + chr(0) + encoded
+
+  def Sign(self, bytes_to_sign):
+    """Signs the bytes using PKCS-v1_5.
+
+    Args:
+      bytes_to_sign: The bytes to be signed.
+    Returns:
+      The signature in base64url encoded format.
+    """
+    # Implements PKCS1-v1_5 w/SHA256 over the bytes, and returns
+    # the result as a base64url encoded bignum.
+
+    # Generate the PKCS1-v1_5 compatible message, which includes
+    # magic ASN.1 bytes and padding:
+    emsa_msg = self._MakeEmsaMessageSha256(bytes_to_sign, self.keypair.size())
+    # TODO(jpanzer): Check whether we need to use max keysize above
+    # or just keypair.size
 
     # Compute the signature:
-    signature_long = self.keypair.sign(sha256_hash_digest, None)[0]
+    signature_long = self.keypair.sign(emsa_msg, None)[0]
+
+    # Encode the signature as armored text:
     signature_bytes = number.long_to_bytes(signature_long)
     return base64.urlsafe_b64encode(signature_bytes).encode('utf-8')
 
@@ -163,14 +214,14 @@ class SignatureAlgRsaSha256(object):
     Returns:
       True if the request validated, False otherwise.
     """
-    # Thing to verify is sha256_digest(signed_bytes)
+    # Generate the PKCS1-v1_5 compatible message, which includes
+    # magic ASN.1 bytes and padding:
+    emsa_msg = self._MakeEmsaMessageSha256(signed_bytes,
+                                           self.keypair.size())
 
-    # Compute SHA256 digest of signed bytes; this is the actual signed thing:
-    sha256_hash_digest = hashlib.sha256(signed_bytes).digest()
-
-    # Get remote signature:
-    remote_signature = base64.urlsafe_b64decode(signature_b64.encode('utf-8'))
-    remote_signature = number.bytes_to_long(remote_signature)
+    # Get putative signature:
+    putative_signature = base64.urlsafe_b64decode(signature_b64.encode('utf-8'))
+    putative_signature = number.bytes_to_long(putative_signature)
 
     # Verify signature given public key:
-    return self.keypair.verify(sha256_hash_digest, (remote_signature,))
+    return self.keypair.verify(emsa_msg, (putative_signature,))

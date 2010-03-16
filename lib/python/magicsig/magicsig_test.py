@@ -20,7 +20,13 @@ __author__ = 'jpanzer@google.com (John Panzer)'
 
 import re
 import unittest
+try:
+  import google3  # GOOGLE local modification
+except ImportError:
+  pass
 import magicsig
+
+#import sys
 
 
 def _StripWS(s):
@@ -31,8 +37,9 @@ def _StripWS(s):
 class TestMagicEnvelopeProtocol(unittest.TestCase):
   """Tests Magic Envelope protocol."""
 
-  class MockKeyRetriever(magicsig.PublicKeyRetriever):
-    def LookupPublicKey(self, signer_uri=None):
+  class MockKeyRetriever(magicsig.KeyRetriever):
+    def LookupPublicKey(self, signer_uri):
+      assert signer_uri
       return  ('RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1'
                'u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww=='
                '.AQAB'
@@ -68,52 +75,28 @@ class TestMagicEnvelopeProtocol(unittest.TestCase):
     self.magicenv = magicsig.MagicEnvelopeProtocol()
     self.magicenv.key_retriever = self.MockKeyRetriever()
 
-  def testSignMessage(self):
-    me = self.magicenv.SignMessage(self.test_atom,
-                                   'application/atom+xml',
-                                   'acct:test@example.com')
-
-    self.assertTrue(me.has_key('data'))
-    self.assertTrue(me.has_key('encoding'))
-    self.assertTrue(me.has_key('sig'))
-    self.assertTrue(me.has_key('alg'))
-
-    self.assertTrue(self.magicenv.Verify(me))
-
-  def testParse(self):
-    me1 = self.magicenv.SignMessage(self.test_atom,
-                                    'application/atom+xml',
-                                    'acct:test@example.com')
-    text = self.magicenv.Unfold(me1)
-
-    me2 = self.magicenv.Parse(text)
-
-    # Re-parsing the signed data should yield the same envelope bits:
-    self.assertEquals(me1['data'], me2['data'])
-    self.assertEquals(me1['sig'], me2['sig'])
-
-  def testGetFirstAuthor(self):
+  def testGetSignerURI(self):
     # Trival case of one author:
-    a = self.magicenv.GetFirstAuthor(self.test_atom)
+    a = self.magicenv.GetSignerURI(self.test_atom)
     self.assertEquals(a, 'acct:test@example.com')
 
     # Multi author case:
-    a = self.magicenv.GetFirstAuthor(self.test_atom_multi_author)
+    a = self.magicenv.GetSignerURI(self.test_atom_multi_author)
     self.assertEquals(a, 'acct:alice@example.com')
 
-  def testCheckAuthorship(self):
+  def testIsAllowedSigner(self):
     # Check that we can recognize the author
-    self.assertTrue(self.magicenv.CheckAuthorship(self.test_atom,
+    self.assertTrue(self.magicenv.IsAllowedSigner(self.test_atom,
                                                   'acct:test@example.com'))
 
-    # CheckAuthorship requires a real URI
-    self.assertFalse(self.magicenv.CheckAuthorship(self.test_atom,
+    # Method requires a real URI
+    self.assertFalse(self.magicenv.IsAllowedSigner(self.test_atom,
                                                    'test@example.com'))
 
     # We recognize only the first of multiple authors
-    self.assertTrue(self.magicenv.CheckAuthorship(self.test_atom_multi_author,
+    self.assertTrue(self.magicenv.IsAllowedSigner(self.test_atom_multi_author,
                                                   'acct:alice@example.com'))
-    self.assertFalse(self.magicenv.CheckAuthorship(self.test_atom_multi_author,
+    self.assertFalse(self.magicenv.IsAllowedSigner(self.test_atom_multi_author,
                                                    'acct:bob@example.com'))
 
   def testNormalizeUserIds(self):
@@ -128,6 +111,87 @@ class TestMagicEnvelopeProtocol(unittest.TestCase):
     self.assertEquals(magicsig.NormalizeUserIdToUri(em3), id3)
     self.assertEquals(magicsig.NormalizeUserIdToUri(' '+id1+' '), id1)
 
+
+TEST_PRIVATE_KEY = ('RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1'
+                    'u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww=='
+                    '.AQAB'
+                    '.Lgy_yL3hsLBngkFdDw1Jy9TmSRMiH6yihYetQ8jy-jZXdsZXd8V5'
+                    'ub3kuBHHk4M39i3TduIkcrjcsiWQb77D8Q==')
+
+
+class TestMagicEnvelope(unittest.TestCase):
+  """Tests the Envelope class."""
+
+  class MockKeyRetriever(magicsig.KeyRetriever):
+    def LookupPublicKey(self, signer_uri):
+      assert signer_uri
+      return TEST_PRIVATE_KEY
+
+  test_atom = """<?xml version='1.0' encoding='UTF-8'?>
+    <entry xmlns='http://www.w3.org/2005/Atom'>
+    <id>tag:example.com,2009:cmt-0.44775718</id>
+      <author><name>test@example.com</name><uri>acct:test@example.com</uri>
+      </author>
+      <content>Salmon swim upstream!</content>
+      <title>Salmon swim upstream!</title>
+      <updated>2009-12-18T20:04:03Z</updated>
+    </entry>
+  """
+
+  def setUp(self):
+    self.protocol = magicsig.MagicEnvelopeProtocol()
+    self.protocol.key_retriever = self.MockKeyRetriever()
+
+  def testInvalidEnvelopes(self):
+    self.assertRaises(magicsig.EnvelopeError, magicsig.Envelope, 'blah')
+    try:
+      magicsig.Envelope(foo=5, biff=23)
+      # Should never get here
+      self.assertTrue(None)
+    except magicsig.Error:
+      pass
+      # e = sys.exc_info()[1]
+      #print "Exception: %s" % e
+      #print "Invalid envelope: %s" % e.invalid_envelope
+
+  def testSigning(self):
+    envelope = magicsig.Envelope(
+        self.protocol,
+        raw_data_to_sign=self.test_atom,
+        signer_uri='acct:test@example.com',
+        signer_key=TEST_PRIVATE_KEY,
+        data_type='application/atom+xml',
+        encoding='base64url',
+        alg='RSA-SHA256')
+
+    # Turn envelope into text:
+    xml = envelope.ToXML()
+
+    # Now round-trip it:
+    magicsig.Envelope(
+        self.protocol,
+        mime_type='application/magic-envelope+xml',
+        document=xml)
+
+    # Getting here without an exception is success.
+
+  def testTampering(self):
+    envelope = magicsig.Envelope(
+        self.protocol,
+        raw_data_to_sign=self.test_atom,
+        signer_uri='acct:test@example.com',
+        signer_key=TEST_PRIVATE_KEY,
+        data_type='application/atom+xml',
+        encoding='base64url',
+        alg='RSA-SHA256')
+
+    xml = envelope.ToXML()
+
+    self.assertRaises(Exception,
+                      magicsig.Envelope,
+                      self.protocol,
+                      mime_type='application/magic-envelope+xml',
+                      document=re.sub('U2FsbW9', 'U2GsbW9', xml))
 
 if __name__ == '__main__':
   unittest.main()

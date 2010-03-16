@@ -20,7 +20,11 @@ __author__ = 'jpanzer@google.com (John Panzer)'
 
 import re
 import unittest
-import magicsig.magicsigalg as magicsigalg
+try:
+  import google3  # GOOGLE local modification
+except ImportError:
+  pass
+import magicsig.magicsigalg as magicsigalg  # GOOGLE local mod
 
 
 def _StripWS(s):
