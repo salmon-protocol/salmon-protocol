@@ -55,7 +55,7 @@ function updatexml(text) {
   $.ajax({
     type: "POST",
     url: "/magicsigdemo?format=magic-envelope",
-    data: "data="+escape(text),
+    data: "data="+encodeURIComponent(text),
     success: function(response){
       $('#envelope').val(response); 
       $('#output').fadeOut();
@@ -74,7 +74,7 @@ function unfoldatomxml(text) {
   $.ajax({
     type: "POST",
     url: "/magicsigdemo?format=atom",
-    data: "env="+escape(text),
+    data: "env="+encodeURIComponent(text),
     success: function(response){
       $('#signedAtom').val(response); 
       $('#output').fadeIn();
@@ -92,7 +92,7 @@ function verifyxml(text) {
   $.ajax({
     type: "POST",
     url: "/magicsigdemoverify",
-    data: "data="+escape(text),
+    data: "data="+encodeURIComponent(text),
     success: function(response){
       if (response == "OK") {
         showStatusAndHideAfterFiveSecs("Salmon signature verified!");

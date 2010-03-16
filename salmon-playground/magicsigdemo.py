@@ -25,6 +25,7 @@ import datetime
 import wsgiref.handlers
 import dumper
 import cgi
+import sys
 
 from string import strip
 
@@ -78,11 +79,11 @@ class SignThisHandler(webapp.RequestHandler):
     format = self.request.get('format') or 'magic-envelope'
     if data:
       logging.info('posted Atom data = %s\n',data)
-      userid = users.get_current_user().email();
+      userid = magicsig.NormalizeUserIdToUri(
+          users.get_current_user().email())
 
       # Do an ACL check to see if current user is the author:
-      if not self.magicenv.CheckAuthorship(data,
-          magicsig.NormalizeUserIdToUri(userid)):
+      if not self.magicenv.IsAllowedSigner(data, userid):
         logging.info("Authorship check failed for user %s\n",userid)
         self.response.set_status(400)
         self.response.out.write("User "+userid+" not first author of entry,"
@@ -90,57 +91,51 @@ class SignThisHandler(webapp.RequestHandler):
         return
 
       # Sign the content on behalf of user:
-      env = self.magicenv.SignMessage(data, 'application/atom+xml', userid)
+      envelope = magicsig.Envelope(raw_data_to_sign=data,
+                                   data_type='application/atom+xml',
+                                   signer_uri=userid,
+                                   signer_key='TEST')
+      #env = self.magicenv.SignMessage(data, 'application/atom+xml', userid)
     elif envText:
       logging.info('posted Magic envelope env = %s\n',envText)
-      env = self.magicenv.Parse(envText)
+      envelope = magicsig.Envelope(document=envText,
+                                   mime_type='applicaton/magic-envelope+xml')
+      #env = self.magicenv.Parse(envText)
 
-    # Just to sanity check:
-    assert self.magicenv.Verify(env)
-
-    #logging.info("Created env! data:\n%s\nand signature:\n%s\n",env['data'],env['sig'])
+    logging.info('Created magic envelope: \n%s\n' % envelope)
 
     self.response.set_status(200) # The default
     if format == 'magic-envelope':
-      self.response.out.write("""<?xml version='1.0' encoding='UTF-8'?>
-<me:env xmlns:me='http://salmon-protocol.org/ns/magic-env'>
-  <me:data type='application/atom+xml' encoding='"""+env['encoding']+"""'>\n"""+
-    env['data']+"""</me:data>
-  <me:alg>"""+env['alg']+"""</me:alg>
-  <me:sig>"""+env['sig']+"""</me:sig>
-</me:env>\n
-"""
-      )
+      self.response.out.write(envelope.ToXML())
     elif format == 'atom':
-      #self.response.out.write("Content-Type: application/atom+xml; charset=utf-8\n\n")
-      self.response.out.write(self.magicenv.Unfold(env))
+      self.response.out.write(envelope.ToAtom())
     else:
       self.response.set_status(400)
       raise "Unsupported format: "+format
 
 class VerifyThisHandler(webapp.RequestHandler):
   """Handles request to verify a magic envelope or signed Atom entry.
-  
   """
 
   magicenv = magicsig.MagicEnvelopeProtocol()
 
   def post(self):
     """  Intended to be called via XHR from magicsigdemo.html. """
-
-    data = self.request.get('data')
-    logging.info('data = %s\n',data)
+    logging.error('MagicSigDemoVerify post')
+    data = self.request.get('data').strip()
+    logging.info('The data = %s\n',data)
     env = self.magicenv.Parse(data)
-    logging.info('env = %s\n',env)
-
-    self.response.set_status(200) # The default
-    if self.magicenv.Verify(env):
+    try:
+      envelope = magicsig.Envelope(document=data,
+                                   mime_type='application/magic-envelope+xml')
+      self.response.set_status(200) # The default
       self.response.out.write("OK")
-      logging.info("Salmon signature verified!")
-    else:
-      self.response.set_status(400) # Input error (does not validate)
-      self.response.out.write("Signature does not validate.")
-      logging.info("Salmon signature verification FAILED")
+      logging.info("SPLASH! Salmon signature verified!")
+    except magicsig.Error:
+      self.response.set_status(400)
+      info = "Details: Exception %s:\n%s\nTraceback:\n%s" % sys.exc_info()
+      logging.info(info)
+      self.response.out.write('Signature does not validate. Details: %s' % info)
 
 if __name__ == '__main__':
   main()

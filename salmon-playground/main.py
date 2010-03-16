@@ -39,6 +39,7 @@ from oauth import OAuthDanceHandler, OAuthHandler, requiresOAuth
 # Demos
 import magicsigdemo
 from magicsig import magicsigalg #TODO get rid of this, should not be used
+import rawsignatures
 
 #Data model
 import model
@@ -237,6 +238,7 @@ class LatestHandler(webapp.RequestHandler):
 
   @aclRequired
   def get(self):
+    logging.error('ZAWEEBO!')
     stuff=[]
     for salmon in Entry.gql('ORDER BY updated DESC').fetch(10):
       text = cgi.escape(salmon.content if salmon.content else '(no content)')
@@ -309,7 +311,8 @@ application = webapp.WSGIApplication(
     (r'/oauth/(.*)', OAuthDanceHandler),
     (r'/blogproxy', bloggerproxy.BlogProxyHandler),
     (r'/magicsigdemo', magicsigdemo.SignThisHandler),
-    (r'/magicsigdemoverify', magicsigdemo.VerifyThisHandler)
+    (r'/magicsigdemoverify', magicsigdemo.VerifyThisHandler),
+    (r'/rawsignatures', rawsignatures.RawSignaturesHandler),
   ],
   debug=True)
 
