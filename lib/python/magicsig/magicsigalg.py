@@ -158,7 +158,7 @@ class SignatureAlgRsaSha256(object):
     """Returns string identifier for algorithm used."""
     return 'RSA-SHA256'
 
-  def _MakeEmsaMessageSha256(self, msg, modulus_size):
+  def _MakeEmsaMessageSha256(self, msg, modulus_size, logf=None):
     """Algorithm EMSA_PKCS1-v1_5 from PKCS 1 version 2.
 
     This is derived from keyczar code, and implements the
@@ -174,14 +174,21 @@ class SignatureAlgRsaSha256(object):
     magic_sha256_header = [0x30, 0x31, 0x30, 0xd, 0x6, 0x9, 0x60, 0x86, 0x48,
                            0x1, 0x65, 0x3, 0x4, 0x2, 0x1, 0x5, 0x0, 0x4, 0x20]
 
-    hash_of_msg = hashlib.sha256(msg).digest()
+    hash_of_msg = hashlib.sha256(msg).digest() #???
+
+    self._Log(logf, 'sha256 digest of msg %s: [%s]' % (msg, hash_of_msg.encode('hex')))
 
     encoded = ''.join([chr(c) for c in magic_sha256_header]) + hash_of_msg
 
     pad_string = chr(0xFF) * (modulus_size / 8 - len(encoded) - 3)
     return chr(1) + pad_string + chr(0) + encoded
 
-  def Sign(self, bytes_to_sign):
+  def _Log(self, logf, s):
+    """Append message to log if log exists."""
+    if logf:
+      logf(s + '\n')
+
+  def Sign(self, bytes_to_sign, logf=None):
     """Signs the bytes using PKCS-v1_5.
 
     Args:
@@ -192,17 +199,24 @@ class SignatureAlgRsaSha256(object):
     # Implements PKCS1-v1_5 w/SHA256 over the bytes, and returns
     # the result as a base64url encoded bignum.
 
+    self._Log(logf, 'bytes_to_sign = [%s]' % bytes_to_sign.encode('hex'))
+
     # Generate the PKCS1-v1_5 compatible message, which includes
     # magic ASN.1 bytes and padding:
-    emsa_msg = self._MakeEmsaMessageSha256(bytes_to_sign, self.keypair.size())
+    emsa_msg = self._MakeEmsaMessageSha256(bytes_to_sign, self.keypair.size(), logf)
     # TODO(jpanzer): Check whether we need to use max keysize above
     # or just keypair.size
+
+    self._Log(logf, 'emsa_msg = [%s]' % emsa_msg.encode('hex'))
 
     # Compute the signature:
     signature_long = self.keypair.sign(emsa_msg, None)[0]
 
     # Encode the signature as armored text:
     signature_bytes = number.long_to_bytes(signature_long)
+
+    self._Log(logf, 'signature_bytes = [%s]' % signature_bytes.encode('hex'))
+
     return base64.urlsafe_b64encode(signature_bytes).encode('utf-8')
 
   def Verify(self, signed_bytes, signature_b64):

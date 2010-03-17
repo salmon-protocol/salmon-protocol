@@ -29,9 +29,13 @@ _test_keypair = ('RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1'
 _test_text = unicode('One small splash for a salmon, one giant '
                      'leap for salmonkind!', 'utf-8').encode('utf-8')
 
+def log(s):
+  print s
+
 if __name__ == '__main__':
   signer = magicsigalg.SignatureAlgRsaSha256(_test_keypair)
-  sig = signer.Sign(_test_text)
+  logger = ''
+  sig = signer.Sign(_test_text, log)
   print "Message: [%s]" % _test_text
   print "Key: [%s]" % _test_keypair
   print "Signature: [%s]" % sig
