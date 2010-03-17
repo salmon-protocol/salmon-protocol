@@ -27,6 +27,8 @@ from google.appengine.ext.webapp import logging
 
 import imports
 import magicsig
+import webfingerclient.webfinger as webfinger
+import simplejson as json
 
 class Comment(db.Expando):
   author = db.UserProperty(required=True)
@@ -86,6 +88,18 @@ def extract_mentions(text):
     mentions.append(match)
   return list(set(mentions)) #set() to de-dupe
 
+def do_salmon_slaps(mentions):
+  client = webfinger.Client()
+  for id in mentions:
+    xrd_list = client.lookup(id)
+    for item in xrd_list:
+      logging.info("Got webfinger result for %s: %s" % (id, item))
+      results = json.loads(item)
+      subject = results['subject']
+      slap_urls = key_urls = [link.href for link in results['links'] if link['rel']
+                              == 'http://salmon-protocol.org/ns/salmon-mention']
+      logging.info('Salmon slaps: subject %s, %s' % (subject, slap_urls) )
+
 
 class CommentHandler(webapp.RequestHandler):
   def post(self):
@@ -99,6 +113,7 @@ class CommentHandler(webapp.RequestHandler):
       content = comment_text,
       mentions = comment_mentions)
     c.put()
+    do_salmon_slaps(comment_mentions)
 
     self.response.out.write("thanks");
     self.redirect('/');
@@ -139,6 +154,38 @@ class SalmonSlapHandler(webapp.RequestHandler):
     self.response.set_status(202)
     self.response.out.write("Salmon accepted!\n")
 
+# Following handlers implement a ghetto version of lrdd.
+# Should package this up and make it more real and make
+# it easy to drop into a webapp.
+
+class GhettoHostMeta(webapp.RequestHandler):
+  path = os.path.join(os.path.dirname(__file__), 'host-meta.xml')
+
+  def get(self):
+    host = self.request.headers['Host']
+    vals = dict(hostauthority='http://%s' % host,
+                host=re.sub(':[0-9]+','',host))
+    self.response.out.write(template.render(self.path,
+                                            vals))
+    self.response.set_status(200)
+
+class GhettoUserXRD(webapp.RequestHandler):
+  path = os.path.join(os.path.dirname(__file__), 'user-xrd.xml')
+
+  def get(self):
+    user_uri = self.request.get('q')
+    host = self.request.headers['Host']
+
+    # The following will recurse once we implement Webfinger outbound lookup,
+    # which will be a good reminder to replace it with Nigori or similar:
+    key = magicsig.KeyRetriever().LookupPublicKey(user_uri)
+    keyuri = 'data:application/magic-public-key;%s' % key
+
+    vals = dict(subject=user_uri, keyuri=keyuri, host=host)
+    self.response.out.write(template.render(self.path,
+                                            vals))
+
+# End of ghetto lrdd
 
 def main():
   application = webapp.WSGIApplication(
@@ -146,6 +193,8 @@ def main():
           ('/', MainHandler),
           ('/comment', CommentHandler),
           ('/salmon-slap', SalmonSlapHandler),
+          ('/.well-known/host-meta', GhettoHostMeta),
+          ('/user', GhettoUserXRD),
       ],
       debug=True)
   util.run_wsgi_app(application)
