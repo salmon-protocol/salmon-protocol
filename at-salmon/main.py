@@ -23,6 +23,10 @@ from google.appengine.ext.webapp import util
 from google.appengine.ext.webapp import template
 from google.appengine.api import users
 from google.appengine.ext import db
+from google.appengine.ext.webapp import logging
+
+import imports
+import magicsig
 
 class Comment(db.Expando):
   author = db.UserProperty(required=True)
@@ -69,11 +73,24 @@ class MainHandler(webapp.RequestHandler):
       comment.decorated_content = replacer.sub(linkedMention, comment.decorated_content)
 
     return comment
-  
+
+
+def extract_mentions(text):
+  # http://stackoverflow.com/questions/201323/what-is-the-best-regular-expression-for-validating-email-addresses :)
+  #mentionsRegex = re.compile('@[a-zA-Z0-9_.-]+@[a-zA-Z0-9-]+.[a-zA-Z0-9-.]+')
+  mentionsRegex = re.compile('@[^\s]+') #@-anything followed by a space
+  matches = mentionsRegex.findall(text)
+  mentions = []
+  for match in matches:
+    match = match[1:len(match)] # remove leading @
+    mentions.append(match)
+  return list(set(mentions)) #set() to de-dupe
+
+
 class CommentHandler(webapp.RequestHandler):
   def post(self):
     comment_text = self.request.get('comment-text')
-    comment_mentions = self.extract_mentions(comment_text)
+    comment_mentions = extract_mentions(comment_text)
     comment_text = self.request.get('comment-text')
 
     c = Comment(
@@ -86,20 +103,51 @@ class CommentHandler(webapp.RequestHandler):
     self.response.out.write("thanks");
     self.redirect('/');
 
-  def extract_mentions(self, text):
-    # http://stackoverflow.com/questions/201323/what-is-the-best-regular-expression-for-validating-email-addresses :)
-    #mentionsRegex = re.compile('@[a-zA-Z0-9_.-]+@[a-zA-Z0-9-]+.[a-zA-Z0-9-.]+')
-    mentionsRegex = re.compile('@[^\s]+') #@-anything followed by a space
-    matches = mentionsRegex.findall(text)
-    mentions = []
-    for match in matches:
-      match = match[1:len(match)] # remove leading @
-      mentions.append(match)
-    return list(set(mentions)) #set() to de-dupe
+
+class SalmonSlapHandler(webapp.RequestHandler):
+  def post(self):
+    # Retrieve putative Salmon from input body.
+    body = self.request.body
+    mime_type = self.request.headers['Content-Type']
+    envelope = magicsig.Envelope(
+        document=body,
+        mime_type=mime_type)
+    # If we got here, the Salmon validated.
+
+    # The following is crap, we need to get a much better
+    # data access mechanism in place: 
+    xml = envelope.GetParsedData()
+    author = xml.getElementsByTagName('author')[0].getElementsByTagName('uri')[0].firstChild.data.strip()
+    posted_at_str = xml.getElementsByTagName('updated')[0].firstChild.data.strip()
+    content = xml.getElementsByTagName('content')[0].firstChild.data.strip()
+    # End of crap.
+
+    author = users.User(re.sub('^acct:','',author))
+
+    mentions = extract_mentions(content)
+
+    logging.info('About to add: author=%s, content=%s, mentions=%s' % (author,
+                                                                       content,
+                                                                       mentions))
+
+    c = Comment(
+        author=author,
+        posted_at=datetime.datetime.now(),  #should convert posted_at_str,
+        content=content,
+        mentions=mentions)
+    c.put()
+    self.response.set_status(202)
+    self.response.out.write("Salmon accepted!\n")
+
 
 def main():
-  application = webapp.WSGIApplication([('/', MainHandler), ('/comment', CommentHandler)],
-                                       debug=True)
+  application = webapp.WSGIApplication(
+      [
+          ('/', MainHandler),
+          ('/comment', CommentHandler),
+          ('/salmon-slap', SalmonSlapHandler),
+      ],
+      debug=True)
   util.run_wsgi_app(application)
 
 
