@@ -180,8 +180,10 @@ class SignatureAlgRsaSha256(object):
 
     encoded = ''.join([chr(c) for c in magic_sha256_header]) + hash_of_msg
 
-    pad_string = chr(0xFF) * (modulus_size / 8 - len(encoded) - 3)
-    return chr(1) + pad_string + chr(0) + encoded
+    msg_size_bits = modulus_size + 8-(modulus_size % 8)  # Round up to next byte
+
+    pad_string = chr(0xFF) * (msg_size_bits / 8 - len(encoded) - 3)
+    return chr(0) + chr(1) + pad_string + chr(0) + encoded
 
   def _Log(self, logf, s):
     """Append message to log if log exists."""
@@ -200,6 +202,8 @@ class SignatureAlgRsaSha256(object):
     # the result as a base64url encoded bignum.
 
     self._Log(logf, 'bytes_to_sign = [%s]' % bytes_to_sign.encode('hex'))
+
+    self._Log(logf, 'keypair size : %s' % self.keypair.size())
 
     # Generate the PKCS1-v1_5 compatible message, which includes
     # magic ASN.1 bytes and padding:
