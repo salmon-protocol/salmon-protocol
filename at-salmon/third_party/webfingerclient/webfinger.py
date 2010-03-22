@@ -191,7 +191,7 @@ class Client(object):
     try:
       response, content = self._http_client.request(url)
     except Exception, e:  # This is hackish
-      raise FetchError('Could not fetch %s. Host down?' % url)
+      raise FetchError('Could not fetch %s. Host down? %s' % (url, e))
     if response.status != 200:
       raise FetchError(
         'Could not fetch %s. Status %d.' % (url, response.status))

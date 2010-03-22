@@ -29,95 +29,14 @@ import imports
 import magicsig
 import webfingerclient.webfinger as webfinger
 import simplejson as json
+import datamodel
+import comment_handler
+import mentions_handler
 
-class Comment(db.Expando):
-  author = db.UserProperty(required=True)
-  posted_at = db.DateTimeProperty(required=True)
-  content = db.TextProperty(required=True)
-  mentions = db.StringListProperty()
-  
 class MainHandler(webapp.RequestHandler):
 
   def get(self):
-    user = users.get_current_user()
-    if user:
-      commentResults = db.GqlQuery("SELECT * FROM Comment")
-      mentionResults = self.fetch_mentions_for_user(user)
-      comments = []
-      mentions = []
-      for comment in commentResults:
-        comments.append(self.decorate_comment(comment))
-      for mention in mentionResults:
-        mentions.append(self.decorate_comment(comment))
-
-      template_values = {
-        'comments': comments,
-        'mentions': mentions,
-        'user': user.email(),
-        'logout_url': users.create_logout_url('/') }
-      path = os.path.join(os.path.dirname(__file__), 'index.html')
-      self.response.out.write(template.render(path, template_values))
-    else:
-      greeting = ("<a href=\"%s\">Sign in or register</a>." %
-                  users.create_login_url("/"))
-      self.response.out.write(greeting)
-
-  def fetch_mentions_for_user(self, user): 
-    mentions = db.GqlQuery("SELECT * FROM Comment where mentions = :user_uri", user_uri=user.email())
-    return mentions
-
-  def decorate_comment(self, comment):
-    comment.decorated_content = comment.content
-
-    for mention in comment.mentions:
-      replacer = re.compile(mention)
-      linkedMention = "<a href='' title='Link to something on about %s'>%s</a>" % (mention, mention)
-      comment.decorated_content = replacer.sub(linkedMention, comment.decorated_content)
-
-    return comment
-
-
-def extract_mentions(text):
-  # http://stackoverflow.com/questions/201323/what-is-the-best-regular-expression-for-validating-email-addresses :)
-  #mentionsRegex = re.compile('@[a-zA-Z0-9_.-]+@[a-zA-Z0-9-]+.[a-zA-Z0-9-.]+')
-  mentionsRegex = re.compile('@[^\s]+') #@-anything followed by a space
-  matches = mentionsRegex.findall(text)
-  mentions = []
-  for match in matches:
-    match = match[1:len(match)] # remove leading @
-    mentions.append(match)
-  return list(set(mentions)) #set() to de-dupe
-
-def do_salmon_slaps(mentions):
-  client = webfinger.Client()
-  for id in mentions:
-    xrd_list = client.lookup(id)
-    for item in xrd_list:
-      logging.info("Got webfinger result for %s: %s" % (id, item))
-      results = json.loads(item)
-      subject = results['subject']
-      slap_urls = key_urls = [link.href for link in results['links'] if link['rel']
-                              == 'http://salmon-protocol.org/ns/salmon-mention']
-      logging.info('Salmon slaps: subject %s, %s' % (subject, slap_urls) )
-
-
-class CommentHandler(webapp.RequestHandler):
-  def post(self):
-    comment_text = self.request.get('comment-text')
-    comment_mentions = extract_mentions(comment_text)
-    comment_text = self.request.get('comment-text')
-
-    c = Comment(
-      author = users.get_current_user(), 
-      posted_at = datetime.datetime.now(),
-      content = comment_text,
-      mentions = comment_mentions)
-    c.put()
-    do_salmon_slaps(comment_mentions)
-
-    self.response.out.write("thanks");
-    self.redirect('/');
-
+    self.redirect('/comment');
 
 class SalmonSlapHandler(webapp.RequestHandler):
   def post(self):
@@ -191,7 +110,8 @@ def main():
   application = webapp.WSGIApplication(
       [
           ('/', MainHandler),
-          ('/comment', CommentHandler),
+          ('/mentions.*', mentions_handler.MentionsHandler),
+          ('/comment.*', comment_handler.CommentHandler),
           ('/salmon-slap', SalmonSlapHandler),
           ('/.well-known/host-meta', GhettoHostMeta),
           ('/user', GhettoUserXRD),

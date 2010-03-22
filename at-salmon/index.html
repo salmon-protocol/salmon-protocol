@@ -1,6 +1,6 @@
 <html>
 <head>
-  <link rel="stylesheet" href="./css/ui-darkness/jquery-ui-1.8rc3.custom.css"/>
+  <link rel="stylesheet" href="/css/ui-darkness/jquery-ui-1.8rc3.custom.css"/>
 	<style type="text/css">
     body {
       font-size: 12px;
@@ -24,8 +24,8 @@
       background: #666;      
     }
 	</style>
-<script src="js/jquery-1.4.2.min.js"></script>
-<script src="js/jquery-ui-1.8rc3.custom.min.js"></script>
+<script src="/js/jquery-1.4.2.min.js"></script>
+<script src="/js/jquery-ui-1.8rc3.custom.min.js"></script>
 	<script>
 	  $(function() {
       $("#tabs").tabs();
@@ -37,21 +37,30 @@
 	</script>
 </head>
   <body>
+    
     <div id='user'>
+      {% if user %}
       You are logged in as {{ user }}.
       <br/>
       <a href="{{ logout_url }}">Log out</a>
+      {% else %}
+      <a href="{{ login_url }}">Log in</a>
+      {% endif %}
     </div>
     <div id="tabs">
     	<ul>
-    		<li><a href="#tabs-comments">Leave a Comment</a></li>
+    		<li><a href="#tabs-comments">Comments</a></li>
+    		{% if user %}
     		<li><a href="#tabs-mentions">Mentions of You</a></li>
+    		{% endif %}
     	</ul>
     	<div id="tabs-comments">
-        <form id='comment-form' action="/comment" method="post">
+    	  {% if user %}
+        <form id='comment-form' action="{{ parent_uri }}" method="post">
           <div><textarea id="comment-text" name="comment-text" rows="3" cols="60"></textarea></div>
           <div><input id="submit-button" type="submit" value="Post Comment"></div>
         </form>
+        {% endif %}
         <ul id="comments">
           {% for comment in comments %}
             <li class='comment'>
@@ -64,6 +73,7 @@
           {% endfor %}
         </ul>
     	</div>
+    	{% if user %}
     	<div id="tabs-mentions">
         <ul id="mentions">
           {% for comment in mentions %}
@@ -77,6 +87,7 @@
           {% endfor %}
         </ul>
     	</div>
+    	{% endif %}
     </div>    
     
     <div id='log'></div>
