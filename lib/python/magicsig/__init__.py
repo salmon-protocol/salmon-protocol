@@ -511,9 +511,9 @@ class Envelope(object):
 </me:env>
 """
     text = template % (self._encoding,
-                       _ToPretty(self._data, 4, 64),
+                       _ToPretty(self._data, 4, 60),
                        self._alg,
-                       _ToPretty(self._sig, 4, 64))
+                       _ToPretty(self._sig, 4, 60))
     indented_text = ''
     for line in text.strip().split('\n'):
       indented_text += ' '*indentation + line + '\n'
@@ -536,19 +536,21 @@ class Envelope(object):
     d = self._parsed_data
     assert d.getroot().tag == _ATOM_NS+'entry'
 
-    # Create a provenance and add it in.  Note that support
-    # for namespaces on output in minidom is even worse
-    # than support for parsing, so we have to specify
-    # the qualified name completely here for each element.
+    # Create a provenance and add it in.
     prov_el = et.Element(_ME_NS+'provenance')
     data_el = et.SubElement(prov_el, _ME_NS+'data')
     data_el.set('type', self._data_type)
-    data_el.text = self._data
+    data_el.text = '\n'+_ToPretty(self._data, indentation+6, 60)
     et.SubElement(prov_el, _ME_NS+'encoding').text = self._encoding
-    et.SubElement(prov_el, _ME_NS+'sig').text = self._sig
-    
+    et.SubElement(prov_el, _ME_NS+'sig').text = '\n'+_ToPretty(self._sig,
+                                                               indentation+6,
+                                                               60)
+
     # Add in the provenance element:
     d.getroot().append(prov_el)
+
+    # Prettify:
+    self._PrettyIndent(d.getroot(), indentation/2)
 
     # Turn it back into text for consumption:
     text = et.tostring(d.getroot(),encoding='utf-8')
@@ -558,6 +560,9 @@ class Envelope(object):
       if line.strip() != '':
         indented_text += ' '*indentation + line + '\n'
 
+    if fulldoc:
+      indented_text = ('<?xml version=\'1.0\' encoding=\'UTF-8\'?>\n' +
+                       indented_text)
     return indented_text
 
   def GetData(self):
@@ -580,6 +585,23 @@ class Envelope(object):
     """Returns data with provenance in parsed form."""
     # TODO(jpanzer): Implement.
 
+
+  def _PrettyIndent(self, elem, level=0):
+    """Prettifies an element tree in-place"""
+    # TODO(jpanzer): Avoid munging text nodes where it matters?
+    i = "\n" + level*"  "
+    if len(elem):
+      if not elem.text or not elem.text.strip():
+         elem.text = i + "  "
+      if not elem.tail or not elem.tail.strip():
+        elem.tail = i
+      for elem in elem:
+        self._PrettyIndent(elem, level+1)
+      if not elem.tail or not elem.tail.strip():
+        elem.tail = i
+    else:
+      if level and (not elem.tail or not elem.tail.strip()):
+        elem.tail = i
 
 def _ToPretty(text, indent, linelength):
   """Makes huge text lines pretty, or at least printable."""
