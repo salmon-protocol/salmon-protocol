@@ -528,11 +528,11 @@ class Envelope(object):
     # than support for parsing, so we have to specify
     # the qualified name completely here for each element.
     prov_el = et.Element(_ME_NS+'provenance')
-    data_el = et.SubElement(prov, _ME_NS+'data')
+    data_el = et.SubElement(prov_el, _ME_NS+'data')
     data_el.set('type', self._data_type)
     data_el.text = self._data
-    et.SubElement(prov, _ME_NS+'encoding').text = self._encoding
-    et.SubElement(prov, _ME_NS+'sig').text = self._sig
+    et.SubElement(prov_el, _ME_NS+'encoding').text = self._encoding
+    et.SubElement(prov_el, _ME_NS+'sig').text = self._sig
 
     # Turn it back into text for consumption:
     text = et.tostring(d.getroot(),encoding='utf-8')

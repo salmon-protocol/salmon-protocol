@@ -175,6 +175,20 @@ class TestMagicEnvelope(unittest.TestCase):
 
     # Getting here without an exception is success.
 
+  def testToAtom(self):
+    envelope = magicsig.Envelope(
+        self.protocol,
+        raw_data_to_sign=self.test_atom,
+        signer_uri='acct:test@example.com',
+        signer_key=TEST_PRIVATE_KEY,
+        data_type='application/atom+xml',
+        encoding='base64url',
+        alg='RSA-SHA256')
+
+    atom = envelope.ToAtom()
+
+    #TODO(jpanzer): Perform additional verification here
+
   def testTampering(self):
     envelope = magicsig.Envelope(
         self.protocol,
