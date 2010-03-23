@@ -30,7 +30,16 @@ import re
 import sys
 import time
 
-import xml.dom.minidom as dom
+# ElementTree is standard with Python >=2.5, needs
+# environment support for 2.4 and lower.
+try:
+  import xml.etree.ElementTree as et  # Python >=2.5
+except ImportError:
+  try:
+    import elementtree as et  # Allow local path override
+  except ImportError:
+    raise
+
 import magicsigalg
 
 _WHITESPACE_RE = re.compile(r'\s+')
@@ -100,6 +109,8 @@ class KeyRetriever(object):
     # TODO(jpanzer): Fix this up to really work, or eliminate.
     return self.LookupPublicKey(signer_uri)
 
+_ATOM_NS='{http://www.w3.org/2005/Atom}'
+_ME_NS='{http://salmon-protocol.org/ns/magic-env}'
 
 class MagicEnvelopeProtocol(object):
   """Implementation of Magic Envelope protocol."""
@@ -128,17 +139,15 @@ class MagicEnvelopeProtocol(object):
     Returns:
       The URI of the author of the message.
     """
-    if isinstance(data, dom.Document):
+    if isinstance(data, et.ElementTree):
       d = data
     else:
-      d = dom.parseString(data)
+      d = et.ElementTree()
+      d._setroot(et.XML(data))
 
-    if d.documentElement.tagName == 'entry':
-      authors = d.documentElement.getElementsByTagName('author')
-      for a in authors:
-        uris = a.getElementsByTagName('uri')
-        for uri in uris:
-          return NormalizeUserIdToUri(uri.firstChild.data)
+    auth_uris = d.getroot().findall(_ATOM_NS+'author/'+_ATOM_NS+'uri')
+    for u in auth_uris:
+      return NormalizeUserIdToUri(u.text)
 
   def IsAllowedSigner(self, data, userid_uri):
     """Checks that userid_uri is identified as an allowed signer.
@@ -252,7 +261,8 @@ class MagicEnvelopeProtocol(object):
     if mime_type != 'application/atom+xml':
       raise ValueError('Unknown MIME type %s' % mime_type)
 
-    d = dom.parseString(raw_text_data)
+    d = et.ElementTree()
+    d._setroot(et.XML(raw_text_data))
 
     return d
 
@@ -272,74 +282,31 @@ class MagicEnvelopeProtocol(object):
 
     # TODO(jpanzer): Support JSON format, do real sanity checks against
     # mime type
-    d = dom.parseString(textinput.strip())
-    if d.documentElement.tagName == 'entry':
-      env_el = _GetElementByTagName(d, ns, 'provenance')
-    elif d.documentElement.tagName == 'me:env':
-      env_el = d.documentElement
+    d = et.ElementTree()
+    d._setroot(et.XML(textinput.strip()))
+
+    if d.getroot().tag == _ATOM_NS+'entry':
+      env_el = d.find(_ME_NS+'provenance')
+    elif d.getroot().tag == _ME_NS+'env':
+      env_el = d.getroot()
     else:
       raise ValueError('Unrecognized input format')
 
     def Squeeze(s):  # Remove all whitespace
       return re.sub(_WHITESPACE_RE, '', s)
 
-    def Textof(node):  # Get DOM node's text
-      return node.firstChild.data.strip()
-
-    data_el = _GetElementByTagName(env_el, ns, 'data')
+    data_el = env_el.find(_ME_NS+'data')
 
     # Pull magic envelope fields out into dict. Don't forget
     # to remove leading and trailing whitepace from each field's
     # data.
     return dict (
-        data=Squeeze(Textof(data_el)),
-        encoding=Textof(_GetElementByTagName(env_el, ns, 'encoding')),
-        data_type=data_el.getAttribute('type'),
-        alg=Textof(_GetElementByTagName(env_el, ns, 'alg')),
-        sig=Squeeze(Textof(_GetElementByTagName(env_el, ns, 'sig'))),
+        data=Squeeze(data_el.text),
+        encoding=env_el.findtext(_ME_NS+'encoding'),
+        data_type=data_el.get('type'),
+        alg=env_el.findtext(_ME_NS+'alg'),
+        sig=Squeeze(env_el.findtext(_ME_NS+'sig')),
     )
-
-  def deprecated_use_Envelope_dot_ToAtomXML_Unfold(self, env):
-    """Unfolds a magic envelope into readable data.
-
-    Args:
-       env: The envelope data as a dict per section 3.1 of spec.
-    Returns:
-       The equivalent Atom entry with an me:provenance element
-       containing the original magic signature data.
-    """
-    d = dom.parseString(base64.urlsafe_b64decode(env['data'].encode('utf-8')))
-    assert d.documentElement.tagName == 'entry'
-
-    # Create a provenance and add it in.  Note that support
-    # for namespaces on output in minidom is even worse
-    # than support for parsing, so we have to specify
-    # the qualified name completely here for each element.
-    ns = u'http://salmon-protocol.org/ns/magic-env'
-    prov = d.createElementNS(ns, 'me:provenance')
-    prov.setAttribute('xmlns:me', ns)
-    data = d.createElementNS(ns, 'me:data')
-    data.appendChild(d.createTextNode(env['data']))
-    data.setAttribute('type', 'application/atom+xml')
-    prov.appendChild(data)
-
-    encoding = d.createElementNS(ns, 'me:encoding')
-    encoding.appendChild(d.createTextNode(env['encoding']))
-    prov.appendChild(encoding)
-
-    alg = d.createElementNS(ns, 'me:alg')
-    alg.appendChild(d.createTextNode(env['alg']))
-    prov.appendChild(alg)
-
-    sig = d.createElementNS(ns, 'me:sig')
-    sig.appendChild(d.createTextNode(env['sig']))
-    prov.appendChild(sig)
-    d.documentElement.appendChild(prov)
-
-    # Turn it back into text for consumption:
-    text = d.toxml(encoding='utf-8')
-    d.unlink()
-    return text
 
 
 class EnvelopeError(Error):
@@ -554,35 +521,21 @@ class Envelope(object):
       self._parsed_data = self._protocol.ParseData(text, self._data_type)
 
     d = self._parsed_data
-    assert d.documentElement.tagName == 'entry'
+    assert d.getroot().tag == _ATOM_NS+'entry'
 
     # Create a provenance and add it in.  Note that support
     # for namespaces on output in minidom is even worse
     # than support for parsing, so we have to specify
     # the qualified name completely here for each element.
-    ns = u'http://salmon-protocol.org/ns/magic-env'
-    prov = d.createElementNS(ns, 'me:provenance')
-    prov.setAttribute('xmlns:me', ns)
-    data = d.createElementNS(ns, 'me:data')
-    data.appendChild(d.createTextNode(self._data))
-    data.setAttribute('type', 'application/atom+xml')
-    prov.appendChild(data)
-
-    encoding = d.createElementNS(ns, 'me:encoding')
-    encoding.appendChild(d.createTextNode(self._encoding))
-    prov.appendChild(encoding)
-
-    alg = d.createElementNS(ns, 'me:alg')
-    alg.appendChild(d.createTextNode(self._alg))
-    prov.appendChild(alg)
-
-    sig = d.createElementNS(ns, 'me:sig')
-    sig.appendChild(d.createTextNode(self._sig))
-    prov.appendChild(sig)
-    d.documentElement.appendChild(prov)
+    prov_el = et.Element(_ME_NS+'provenance')
+    data_el = et.SubElement(prov, _ME_NS+'data')
+    data_el.set('type', self._data_type)
+    data_el.text = self._data
+    et.SubElement(prov, _ME_NS+'encoding').text = self._encoding
+    et.SubElement(prov, _ME_NS+'sig').text = self._sig
 
     # Turn it back into text for consumption:
-    text = d.toprettyxml(indent='  ', encoding='utf-8')
+    text = et.tostring(d.getroot(),encoding='utf-8')
 
     indented_text = ''
     for line in text.strip().split('\n'):
