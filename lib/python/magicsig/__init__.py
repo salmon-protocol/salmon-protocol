@@ -42,6 +42,7 @@ except ImportError:
 
 import magicsigalg
 
+
 _WHITESPACE_RE = re.compile(r'\s+')
 
 
@@ -109,8 +110,19 @@ class KeyRetriever(object):
     # TODO(jpanzer): Fix this up to really work, or eliminate.
     return self.LookupPublicKey(signer_uri)
 
-_ATOM_NS='{http://www.w3.org/2005/Atom}'
-_ME_NS='{http://salmon-protocol.org/ns/magic-env}'
+_ATOM_NS_URL = 'http://www.w3.org/2005/Atom'
+_ME_NS_URL = 'http://salmon-protocol.org/ns/magic-env'
+_ATOM_NS='{%s}' % _ATOM_NS_URL
+_ME_NS='{%s}' % _ME_NS_URL
+
+# Set up default namespace mappings for things we care about:
+try:
+  __register_namespace = et.register_namespace
+except AttributeError:
+  def __register_namespace(prefix, uri):
+    et._namespace_map[uri] = prefix
+__register_namespace("atom", _ATOM_NS_URL)
+__register_namespace("me", _ME_NS_URL)
 
 class MagicEnvelopeProtocol(object):
   """Implementation of Magic Envelope protocol."""
