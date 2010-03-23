@@ -185,9 +185,11 @@ class TestMagicEnvelope(unittest.TestCase):
         encoding='base64url',
         alg='RSA-SHA256')
 
-    atom = envelope.ToAtom()
+    text = envelope.ToAtom()
 
-    #TODO(jpanzer): Perform additional verification here
+    assert re.search('atom:entry',text)
+    assert re.search('me:provenance',text)
+    assert re.search('test@example\.com',text)
 
   def testTampering(self):
     envelope = magicsig.Envelope(

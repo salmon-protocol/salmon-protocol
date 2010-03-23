@@ -121,8 +121,9 @@ try:
 except AttributeError:
   def __register_namespace(prefix, uri):
     et._namespace_map[uri] = prefix
-__register_namespace("atom", _ATOM_NS_URL)
-__register_namespace("me", _ME_NS_URL)
+__register_namespace('atom', _ATOM_NS_URL)
+__register_namespace('me', _ME_NS_URL)
+__register_namespace('thr', 'http://purl.org/syndication/thread/1.0')
 
 class MagicEnvelopeProtocol(object):
   """Implementation of Magic Envelope protocol."""
@@ -545,6 +546,9 @@ class Envelope(object):
     data_el.text = self._data
     et.SubElement(prov_el, _ME_NS+'encoding').text = self._encoding
     et.SubElement(prov_el, _ME_NS+'sig').text = self._sig
+    
+    # Add in the provenance element:
+    d.getroot().append(prov_el)
 
     # Turn it back into text for consumption:
     text = et.tostring(d.getroot(),encoding='utf-8')
