@@ -43,28 +43,29 @@ class SalmonSlapHandler(webapp.RequestHandler):
     # Retrieve putative Salmon from input body.
     body = self.request.body
     mime_type = self.request.headers['Content-Type']
+
+    logging.info("Saw body:\n%s\n" % body)
     envelope = magicsig.Envelope(
         document=body,
         mime_type=mime_type)
     # If we got here, the Salmon validated.
 
-    # The following is crap, we need to get a much better
-    # data access mechanism in place: 
-    xml = envelope.GetParsedData()
-    author = xml.getElementsByTagName('author')[0].getElementsByTagName('uri')[0].firstChild.data.strip()
-    posted_at_str = xml.getElementsByTagName('updated')[0].firstChild.data.strip()
-    content = xml.getElementsByTagName('content')[0].firstChild.data.strip()
-    # End of crap.
+    # Grab out the fields of interest:
+    entry = envelope.GetParsedData().getroot()
+    ns = '{http://www.w3.org/2005/Atom}'
+    author=entry.findtext(ns+'author/'+ns+'uri')
+    posted_at_str=entry.findtext(ns+'updated')
+    content=entry.findtext(ns+'content').strip()
 
     author = users.User(re.sub('^acct:','',author))
 
-    mentions = extract_mentions(content)
+    mentions = comment_handler.extract_mentions(content)
 
     logging.info('About to add: author=%s, content=%s, mentions=%s' % (author,
                                                                        content,
                                                                        mentions))
 
-    c = Comment(
+    c = datamodel.Comment(
         author=author,
         posted_at=datetime.datetime.now(),  #should convert posted_at_str,
         content=content,
