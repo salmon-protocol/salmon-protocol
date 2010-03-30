@@ -25,6 +25,7 @@ from google.appengine.api import users
 from google.appengine.ext import db
 from google.appengine.ext.webapp import logging
 
+import xml.etree.ElementTree as et
 import imports
 import magicsig
 import webfingerclient.webfinger as webfinger
@@ -52,20 +53,25 @@ class SalmonSlapHandler(webapp.RequestHandler):
 
     # Grab out the fields of interest:
     entry = envelope.GetParsedData().getroot()
+
+    s = et.tostring(entry,encoding='utf-8')
+    logging.info('Saw entry:\n%s\n' % s)
+
     ns = '{http://www.w3.org/2005/Atom}'
     ans = '{http://activitystrea.ms/spec/1.0/}'
     author=entry.findtext(ns+'author/'+ns+'uri')
     posted_at_str=entry.findtext(ns+'updated')
     content=entry.findtext(ns+'content')
     if not content:
+      content=entry.findtext(ans+'object/'+ns+'content')
+    if not content:
       content=entry.findtext(ns+'summary')
     if not content:
       content=entry.findtext(ns+'title')
     if not content:
-      content=entry.findtext(ans+'object/'+ns+'content')
-    if not content:
       content=''
     content=content.strip()
+    logging.info('Content = %s' % content)
 
     author = users.User(re.sub('^acct:','',author))
 
