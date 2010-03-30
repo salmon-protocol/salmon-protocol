@@ -53,9 +53,19 @@ class SalmonSlapHandler(webapp.RequestHandler):
     # Grab out the fields of interest:
     entry = envelope.GetParsedData().getroot()
     ns = '{http://www.w3.org/2005/Atom}'
+    ans = '{http://activitystrea.ms/spec/1.0/}'
     author=entry.findtext(ns+'author/'+ns+'uri')
     posted_at_str=entry.findtext(ns+'updated')
-    content=entry.findtext(ns+'content').strip()
+    content=entry.findtext(ns+'content')
+    if not content:
+      content=entry.findtext(ns+'summary')
+    if not content:
+      content=entry.findtext(ns+'title')
+    if not content:
+      content=entry.findtext(ans+'object/'+ns+'content')
+    if not content:
+      content=''
+    content=content.strip()
 
     author = users.User(re.sub('^acct:','',author))
 
