@@ -33,7 +33,6 @@ import simplejson as json
 import datamodel
 import comment_handler
 import profile_handler
-import mentions_handler
 
 class MainHandler(webapp.RequestHandler):
 
@@ -135,7 +134,6 @@ def main():
   application = webapp.WSGIApplication(
       [
           ('/', MainHandler),
-          ('/mentions.*', mentions_handler.MentionsHandler),
           ('/comment.*', comment_handler.CommentHandler),
           ('/profile.*', profile_handler.ProfileHandler),
           ('/salmon-slap', SalmonSlapHandler),

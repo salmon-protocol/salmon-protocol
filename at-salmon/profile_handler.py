@@ -30,7 +30,39 @@ import magicsig
 import webfingerclient.webfinger as webfinger
 import simplejson as json
 import datamodel
-import mentions_handler
+
+def query_mentions(user_uri):
+  mentions = []
+  mentionResults = db.GqlQuery("SELECT * FROM Comment where mentions = :user_uri",
+                               user_uri=user_uri)
+  for mention in mentionResults:
+    mentions.append(decorate_comment(mention))
+
+  return mentions
+
+def decorate_comment(comment):
+  comment.decorated_content = comment.content
+  comment.author_uri = comment.author_id
+  logging.info("Author_uri = %s" % comment.author_uri)
+  client = webfinger.Client()
+  for mention in comment.mentions:
+    replacer = re.compile(mention)
+    # relying on memcache to make this not painful.  Should probably store this with the original
+    # mention information on write. (TODO)
+    try:
+      # use http://webfinger.net/rel/profile-page rel link from webfinger to get link to profile page.
+      xrd_list = client.lookup(mention)
+      profile_uris = ['about:blank']
+      for item in xrd_list:
+        profile_uris = [link.href for link in item.links if link.rel
+                                == 'http://webfinger.net/rel/profile-page']
+      linkedMention = "<a href='%s' title='Link to profile for %s'>%s</a>" % (profile_uris[0], mention, mention)
+      comment.decorated_content = replacer.sub(linkedMention, comment.decorated_content)
+    except:
+      pass #TODO: log?
+
+  return comment
+
 
 _PROFILE_RE = re.compile('/profile/([^/.]+)', re.VERBOSE)
 
@@ -124,7 +156,7 @@ class ProfileHandler(webapp.RequestHandler):
       'is_own_profile': is_own_profile,
       'localname': profile.localname,
       'nickname': profile.nickname,
-      'mentions': mentions_handler.query_mentions(fulluserid),
+      'mentions': query_mentions(fulluserid),
       'user': profile.owner.email,
       'publickey': profile.publickey,
       'logout_url': users.create_logout_url(self.request.path),
