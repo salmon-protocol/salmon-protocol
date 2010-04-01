@@ -82,7 +82,7 @@ def get_user_canonical_uri(user, authority):
   if len(profileResults) == 0:
     return None
   else:
-    return profileResults[0].localname + '@' + authority
+    return profileResults[0].localname + '@' + profileResults[0].host_authority
 
 class MentionsHandler(webapp.RequestHandler):
   def get(self):

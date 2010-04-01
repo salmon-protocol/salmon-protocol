@@ -34,6 +34,61 @@ import mentions_handler
 
 _PROFILE_RE = re.compile('/profile/([^/.]+)', re.VERBOSE)
 
+def ensure_profile(user, host_authority):
+  p = get_profile_for_user(user)
+  if p:
+    return p
+  else:
+    return create_profile_for_user(user, host_authority)
+
+def get_profile_for_user(user):
+  profileResults = db.GqlQuery("SELECT * FROM Profile WHERE owner = :owner",
+                                 owner=user).fetch(1)
+  if len(profileResults) == 0:
+    return None
+  else:
+    return profileResults[0]
+
+_ACCT_RE = re.compile('(acct:)?([^@]+)@(.+)', re.VERBOSE)
+
+def get_profile_by_localname(localname):
+  match = _ACCT_RE.match(localname)
+  if match:
+    localname = match.group(2)
+
+  profileResults = db.GqlQuery("SELECT * FROM Profile WHERE localname = :localname",
+                                localname=localname).fetch(1)
+  if len(profileResults) == 0:
+    return None
+  else:
+    return profileResults[0]
+
+def create_profile_for_user(user, host_authority):
+  localname_base = user.email().split('@')[0]
+  localname = localname_base
+  counter = 1
+  while True:
+    r = db.GqlQuery("SELECT * FROM Profile WHERE localname = :localname",
+                    localname=localname).fetch(1)
+    if len(r) == 0:
+      break  # Does not exist
+    
+    counter += 1
+    localname = localname_base + str(counter)
+      
+  # (Small race condition here we don't care about for a demo)
+  # (Using a default public key here instead of generating one on the fly.  Should
+  # probably use None instead until the user writes a comment and then generate one.)
+  p = datamodel.Profile(
+    localname = localname,
+    host_authority = host_authority,
+    owner = user,
+    nickname = localname,
+    publickey = 'RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1'
+                'u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww=='
+                '.AQAB')
+  p.put()
+
 class ProfileHandler(webapp.RequestHandler):
   def get(self):
     logging.info("Saw a GET to /profile handler!")
@@ -45,19 +100,25 @@ class ProfileHandler(webapp.RequestHandler):
       self.response.set_status(400) 
       return
 
-    profileResults = db.GqlQuery("SELECT * FROM Profile WHERE localname = :localname",
-                                 localname=match.group(1)).fetch(1)
-    if len(profileResults) == 0:
-      self.response.out.write("Not found!")
+    # Grab localname; if it's the special @me metavariable,
+    # substitute with the actual users's local profile name
+    # (creating a default on the fly if needed.)
+    localname = match.group(1)
+    if localname == '%40me':
+      profile = ensure_profile(user, self.request.host)
+    else:
+      profile = get_profile_by_localname(localname)
+
+    if not profile:
+      self.response.out.write("Profile not found!")
       self.response.set_status(404)
       return
 
-    profile = profileResults[0]
     is_own_profile = False
     if user:
       is_own_profile = user.email == profile.owner.email
 
-    fulluserid = profile.localname + '@' + self.request.host
+    fulluserid = profile.localname + '@' + profile.host_authority
     template_values = {
       'fulluserid': fulluserid,
       'is_own_profile': is_own_profile,
@@ -65,6 +126,7 @@ class ProfileHandler(webapp.RequestHandler):
       'nickname': profile.nickname,
       'mentions': mentions_handler.query_mentions(fulluserid),
       'user': profile.owner.email,
+      'publickey': profile.publickey,
       'logout_url': users.create_logout_url(self.request.path),
       'login_url' : users.create_login_url(self.request.path) }
     path = os.path.join(os.path.dirname(__file__), 'profile.html')
@@ -75,6 +137,7 @@ class ProfileHandler(webapp.RequestHandler):
     newlocalname = self.request.get('newlocalname')
     oldlocalname = self.request.get('oldlocalname')
     newnickname = self.request.get('newnickname')
+    newpublickey = self.request.get('newpublickey')
     profileResults = db.GqlQuery("SELECT * FROM Profile WHERE localname = :localname",
                                  localname=oldlocalname).fetch(1)
     if len(profileResults) == 0:
@@ -82,8 +145,10 @@ class ProfileHandler(webapp.RequestHandler):
       logging.info("Creating %s %s %s" % (newlocalname, user, newnickname) )
       p = datamodel.Profile(
         localname = newlocalname,
+        host_authority = self.request.host,
         owner = user,
-        nickname = newnickname)
+        nickname = newnickname,
+        publickey = newpublickey)
     else:
       # Already exists, update if ACL checks out:
       logging.info("Updating %s with %s %s %s" % (oldlocalname, newlocalname,
@@ -92,10 +157,12 @@ class ProfileHandler(webapp.RequestHandler):
       if p.owner == user:
         p.nickname = newnickname
         p.localname = newlocalname
+        p.host_authority = self.request.host
+        p.publickey = newpublickey
       else:
         self.response.set_status(403)  #Forbidden!
         return
 
     p.put()
 
-    self.redirect('http://'+self.request.host+'/profile/'+p.localname)
+    self.redirect('http://'+p.host_authority+'/profile/'+p.localname)

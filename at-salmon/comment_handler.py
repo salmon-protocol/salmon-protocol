@@ -30,6 +30,7 @@ import magicsig
 import webfingerclient.webfinger as webfinger
 import simplejson as json
 import datamodel
+import profile_handler
 
 # TODO: refactor this into datamodel or somewhere shared.
 def extract_mentions(text):
@@ -117,9 +118,14 @@ class CommentHandler(webapp.RequestHandler):
     except:
       pass #TODO: log?
 
+    user = users.get_current_user()
+    p = profile_handler.ensure_profile(user, self.request.host)
+
     c = datamodel.Comment(
-      author = users.get_current_user(), 
-      author_profile = profile_uris[0],
+      author = user,
+      author_profile = 'http://'+p.host_authority+'/profile/'+p.localname,
+      author_nickname = p.nickname, 
+      author_id = p.localname+'@'+p.host_authority,
       posted_at = datetime.datetime.now(),
       content = comment_text,
       mentions = comment_mentions,

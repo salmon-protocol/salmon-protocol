@@ -113,9 +113,16 @@ class GhettoUserXRD(webapp.RequestHandler):
     user_uri = self.request.get('q')
     host = self.request.headers['Host']
 
-    # The following will recurse once we implement Webfinger outbound lookup,
-    # which will be a good reminder to replace it with Nigori or similar:
-    key = magicsig.KeyRetriever().LookupPublicKey(user_uri)
+    # Is the profile one we know about?
+    logging.info('Getting profile for %s' % user_uri)
+    p = profile_handler.get_profile_by_localname(user_uri)
+    key = p.publickey
+
+    # The following will recurse if we have no public keys for our
+    # own users, which would be a problem.
+    if not key:
+      key = magicsig.KeyRetriever().LookupPublicKey(user_uri)
+
     keyuri = 'data:application/magic-public-key;%s' % key
 
     vals = dict(subject=user_uri, keyuri=keyuri, host=host)
