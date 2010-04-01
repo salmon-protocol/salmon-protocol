@@ -46,15 +46,18 @@ def extract_mentions(text):
 def do_salmon_slaps(mentions):
   client = webfinger.Client()
   for id in mentions:
-    xrd_list = client.lookup(id)
-    for item in xrd_list:
-      logging.info("Got webfinger result for %s: %s" % (id, item))
-      # item is a Xrd proto2, not a string, no need to decode.
-      subject = item.subject
-      slap_urls = key_urls = [link.href for link in item.links if link.rel
-                              == 'http://salmon-protocol.org/ns/salmon-mention']
-      logging.info('Salmon slaps: subject %s, %s' % (subject, slap_urls) )
-      # TODO: actually post to the salmon-mention URLs.
+    try:
+      xrd_list = client.lookup(id)
+      for item in xrd_list:
+        logging.info("Got webfinger result for %s: %s" % (id, item))
+        # item is a Xrd proto2, not a string, no need to decode.
+        subject = item.subject
+        slap_urls = key_urls = [link.href for link in item.links if link.rel
+                                == 'http://salmon-protocol.org/ns/salmon-mention']
+        logging.info('Salmon slaps: subject %s, %s' % (subject, slap_urls) )
+        # TODO: actually post to the salmon-mention URLs.
+    except webfinger.FetchError:
+      pass
 
 class CommentHandler(webapp.RequestHandler):
   def get(self):
@@ -126,4 +129,3 @@ class CommentHandler(webapp.RequestHandler):
 
     self.response.out.write("thanks");
     self.redirect(self.request.url);
-

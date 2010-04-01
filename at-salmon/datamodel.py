@@ -7,3 +7,8 @@ class Comment(db.Expando):
   posted_at = db.DateTimeProperty(required=True)
   content = db.TextProperty(required=True)
   mentions = db.StringListProperty()
+
+class Profile(db.Expando):
+  localname = db.StringProperty(required=True)
+  nickname = db.StringProperty()
+  owner = db.UserProperty(required=True)
