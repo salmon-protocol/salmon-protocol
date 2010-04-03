@@ -35,8 +35,8 @@ import profile_handler
 # TODO: refactor this into datamodel or somewhere shared.
 def extract_mentions(text):
   # http://stackoverflow.com/questions/201323/what-is-the-best-regular-expression-for-validating-email-addresses :)
-  mentionsRegex = re.compile('@[a-zA-Z0-9_.-]+@[a-zA-Z0-9-]+.[a-zA-Z0-9-.]+')
-  #mentionsRegex = re.compile('@[^\s]+') #@-anything followed by a space
+  #mentionsRegex = re.compile('@[a-zA-Z0-9_.-]+@[a-zA-Z0-9-]+.[a-zA-Z0-9-.]+')
+  mentionsRegex = re.compile('@[^\s\n\r$]+') #@-anything followed by a space or stopper
   matches = mentionsRegex.findall(text)
   mentions = []
   for match in matches:
@@ -44,10 +44,31 @@ def extract_mentions(text):
     mentions.append(match)
   return list(set(mentions)) #set() to de-dupe
 
-def do_salmon_slaps(mentions):
+def to_atom_entry(c):
+  ATOM_ENTRY_TMPL = """<?xml version='1.0' encoding='UTF-8'?>
+<entry xmlns='http://www.w3.org/2005/Atom'>
+  <id>tag:example.com,2009:%s</id>  
+  <author><name>%s</name><uri>%s</uri></author>
+  <content>%s</content>
+  <title>Salmon slap</title>
+  <updated>%s</updated>
+</entry>"""
+  logging.info('turning into atom entry: %s' % c)
+  args = (c.key(), c.author_nickname, c.author_id, c.content, c.posted_at)
+  return ATOM_ENTRY_TMPL % args
+
+def private_signing_key(author):
+  return  ('RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1'
+             'u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww=='
+             '.AQAB'
+             '.Lgy_yL3hsLBngkFdDw1Jy9TmSRMiH6yihYetQ8jy-jZXdsZXd8V5'
+             'ub3kuBHHk4M39i3TduIkcrjcsiWQb77D8Q==')
+
+def do_salmon_slaps(mentions, c):
   client = webfinger.Client()
   for id in mentions:
     try:
+      logging.info('Looking up id %s' % id)
       xrd_list = client.lookup(id)
       for item in xrd_list:
         logging.info("Got webfinger result for %s: %s" % (id, item))
@@ -55,8 +76,32 @@ def do_salmon_slaps(mentions):
         subject = item.subject
         slap_urls = key_urls = [link.href for link in item.links if link.rel
                                 == 'http://salmon-protocol.org/ns/salmon-mention']
-        logging.info('Salmon slaps: subject %s, %s' % (subject, slap_urls) )
+        logging.info('About to do salmon slaps: subject %s, %s' % (subject, slap_urls))
         # TODO: actually post to the salmon-mention URLs.
+        
+        # Build an envelope:
+        text = to_atom_entry(c)
+        logging.info('signing text: %s' % text)
+        envelope = magicsig.Envelope(
+          raw_data_to_sign=text,
+          data_type='application/atom+xml',
+          signer_uri='acct:' + c.author_id,
+          signer_key=private_signing_key(c.author))
+        
+        # Now send the envelope:
+        body_to_send = envelope.ToXML()
+        
+        # TODO: Get our own frickin' HTTP client
+        headers = {'Content-Type' : 'application/atom+xml'} 
+        for url in slap_urls:
+          logging.info('Sending salmon slap to %s' % url)  
+          response, content = client._http_client.request(url,
+                                                          'POST',
+                                                          headers=headers,
+                                                          body=body_to_send)
+          logging.info('Got response %s' % response)
+
+        
     except webfinger.FetchError:
       pass
 
@@ -120,18 +165,20 @@ class CommentHandler(webapp.RequestHandler):
 
     user = users.get_current_user()
     p = profile_handler.ensure_profile(user, self.request.host)
+    assert p
 
+    logging.info('saw mentions: %s' % comment_mentions)
     c = datamodel.Comment(
-      author = user,
-      author_profile = 'http://'+p.host_authority+'/profile/'+p.localname,
-      author_nickname = p.nickname, 
-      author_id = p.localname+'@'+p.host_authority,
-      posted_at = datetime.datetime.now(),
-      content = comment_text,
-      mentions = comment_mentions,
-      parent_uri = self.request.url)
+      author=user,
+      author_profile='http://' + p.host_authority + '/profile/' + p.localname,
+      author_nickname=p.nickname,
+      author_id=p.localname + '@' + p.host_authority,
+      posted_at=datetime.datetime.now(),
+      content=comment_text,
+      mentions=comment_mentions,
+      parent_uri=self.request.url)
     c.put()
-    do_salmon_slaps(comment_mentions)
+    do_salmon_slaps(comment_mentions, c)
 
     self.response.out.write("thanks");
     self.redirect(self.request.url);

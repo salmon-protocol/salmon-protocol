@@ -39,14 +39,42 @@ class MainHandler(webapp.RequestHandler):
   def get(self):
     self.redirect('/comment');
 
+
+class RealKeyRetriever(magicsig.KeyRetriever):
+  """Retrieves public or private keys for a signer identifier (URI)."""
+  client = webfinger.Client()
+  
+  def LookupPublicKey(self, signer_uri):
+    logging.info('Looking up public key for %s' % signer_uri)
+    if not signer_uri:
+      return None
+    xrd_list = self.client.lookup(signer_uri)
+    for item in xrd_list:
+      logging.info("Got webfinger result for %s: %s" % (id, item))
+      # item is a Xrd proto2, not a string, no need to decode.
+      subject = item.subject
+      key_urls = [link.href for link in item.links if link.rel == 'magic-public-key']
+      logging.info('Found magic public keys: subject %s, %s' % (subject, key_urls))    
+
+    # TODO(jpanzer): Yeah, we need key identifiers.
+    KEY_RE=re.compile("data:application/magic-public-key,(RSA.+)")
+    match = KEY_RE.match(key_urls[0])
+    if match:
+      return match.group(1)
+    else:
+      return None
+
 class SalmonSlapHandler(webapp.RequestHandler):
   def post(self):
     # Retrieve putative Salmon from input body.
     body = self.request.body
     mime_type = self.request.headers['Content-Type']
 
+    protocol = magicsig.MagicEnvelopeProtocol()
+    protocol.key_retriever = RealKeyRetriever()
     logging.info("Saw body:\n%s\n" % body)
     envelope = magicsig.Envelope(
+        protocol,
         document=body,
         mime_type=mime_type)
     # If we got here, the Salmon validated.

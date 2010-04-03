@@ -24,6 +24,7 @@ import logging
 import re
 import sys
 import urllib
+import urlparse
 import xrd
 
 # A simplified version of RFC2822 addr-spec parsing
@@ -31,13 +32,16 @@ ATEXT = r'[\w\!\#\$\%\&\'\*\+\-\/\=\?\^\_\`\{\|\}\~]'
 ATOM = ''.join(['(?:', ATEXT, '+', ')'])
 DOT_ATOM_TEXT = ''.join(['(?:', ATOM, '(?:', r'\.', ATOM, ')', '*', ')'])
 DOT_ATOM = DOT_ATOM_TEXT
+SCHEME='acct:'  #TODO: Handle HTTP(S)!
+COLON_NUMBER = r':[0-9]+'
 LOCAL_PART = DOT_ATOM
 DOMAIN = DOT_ATOM
-ADDR_SPEC = ''.join(['(', LOCAL_PART, ')', '@', '(', DOMAIN,  ')'])
+OPT_PORT = COLON_NUMBER  # Optional port for use with localhost domain only
+ADDR_SPEC = ''.join(['(', SCHEME, ')?', '(', LOCAL_PART, ')', '@', '(', DOMAIN,  ')', '(', OPT_PORT, ')?'])
 ADDR_SPEC_RE = re.compile(ADDR_SPEC)
 
-# The URL template for domain-level XRD documents
-DOMAIN_LEVEL_XRD_TEMPLATE = 'http://%s/.well-known/host-meta'
+# The URL template for domain-level XRD documents (with hook for localhost port development)
+DOMAIN_LEVEL_XRD_TEMPLATE = 'http://%s%s/.well-known/host-meta'
 
 # The rel value used to indicate a user lookup service
 WEBFINGER_SERVICE_REL_VALUE = 'lrdd'
@@ -87,9 +91,16 @@ class Client(object):
       FetchError if a URL can not be retrieved.
       ParseError if a description can not be parsed.
     """
+    logging.info('Incoming id is %s' % id)
     id = self._normalize_id(id)
-    addr_spec, local_part, domain = self._parse_id(id)
-    links = self._get_webfinger_service_links(domain)
+    logging.info('Normalized id to %s' % id)
+    try:
+      addr, scheme, local_part, domain, opt_port = self._parse_id(id)
+    except ParseError:
+      r = urlparse.urlparse(id)
+      domain = r.netloc
+      opt_port = None
+    links = self._get_webfinger_service_links(domain, opt_port)
     service_descriptions = list()
     for link in links:
       if link.template:
@@ -104,14 +115,14 @@ class Client(object):
     """Normalize the account identifier.
 
     Args:
-      id: An acctount identifier
+      id: An account identifier
     Returns:
       A normalized account identifier, if possible.
     """
-    if id.startswith('acct://'):
-      return id[7:]
-    elif id.startswith('acct:'):
-      return id[5:]
+    #if id.startswith('acct://'):
+    #  return id[7:]
+    #elif id.startswith('acct:'):
+    #  return id[5:]
     return id
 
   def _get_service_description(self, template, id):
@@ -142,15 +153,18 @@ class Client(object):
       template = template.replace(variable, urllib.quote(id))
     return template
 
-  def _get_webfinger_service_links(self, domain):
+  def _get_webfinger_service_links(self, domain, opt_port):
     """Finds potential webfinger service links.
 
     Args:
       A domain name
+      An optional port (only for use in development)
     Returns:
       A list of xrd_pb2.Link instances of the webfinger service type
     """
-    domain_url = DOMAIN_LEVEL_XRD_TEMPLATE % domain
+    if not opt_port:
+      opt_port = ''
+    domain_url = DOMAIN_LEVEL_XRD_TEMPLATE % (domain, opt_port)
     logging.info('Fetching domain url %s' % domain_url)
     content = self._fetch_url(domain_url)
     domain_xrd = self._xrd_parser.parse(content)
@@ -161,22 +175,22 @@ class Client(object):
     return links
 
   def _parse_id(self, id):
-    """Treats an identifier as a RFC2822 addr-spec and splits it.
+    """Treats an identifier as a restricted RFC2822 addr-spec and splits it.
 
     Args:
       id: An account identifier
     Returns:
-      The tuple (addr_spec, local_part, domain) if it can be parsed
+      The tuple (addr_spec, local_part, domain [,port]) if it can be parsed
     Raises:
       ParseError if the id can not be parsed
     """
-    realname, addr_spec = email.utils.parseaddr(id)
-    if not addr_spec:
-      raise ParseError('Could not parse %s for addr-spec' % id)
-    match = ADDR_SPEC_RE.match(addr_spec)
+    #realname, addr_spec = email.utils.parseaddr(id)
+    #if not addr_spec:
+    #  raise ParseError('Could not parse %s for addr-spec' % id)
+    match = ADDR_SPEC_RE.match(id)
     if not match:
       raise ParseError('Could not parse %s for local_part, domain' % id)
-    return addr_spec, match.group(1), match.group(2)
+    return id, match.group(1), match.group(2), match.group(3), match.group(4)
 
   def _fetch_url(self, url):
     """Fetch a URL.
