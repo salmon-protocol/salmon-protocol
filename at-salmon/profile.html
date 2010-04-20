@@ -11,8 +11,11 @@
               {{ comment.decorated_content }}
             </p>
             <div class="byline">
-              <a href="{{ comment.author_profile }}">{{ comment.author_uri }}</a>
+              <a href="{{ comment.author_uri }}">{{ comment.author_display_name }}</a>
               {{ comment.posted_at|timesince }} ago
+              {% if comment.parent_uri %}
+              in <a href="{{ comment.parent_uri }}">{{ comment.parent_uri }}</a>
+              {% endif %}
               <br/>
             </div>
           </li>

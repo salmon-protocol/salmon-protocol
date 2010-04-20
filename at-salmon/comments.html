@@ -10,7 +10,7 @@
           {{ comment.decorated_content }}
             </p>
             <div class="byline">
-              <a href="{{ comment.author_profile }}">{{ comment.author_nickname }}</a>
+              <a href="{{ comment.author_uri }}">{{ comment.author_display_name }}</a>
               {{ comment.posted_at|timesince }} ago
               <br/>
             </div>

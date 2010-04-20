@@ -101,17 +101,17 @@ class SalmonSlapHandler(webapp.RequestHandler):
     content=content.strip()
     logging.info('Content = %s' % content)
 
-    author = users.User(re.sub('^acct:','',author))
+    # Ensure we have a virtual profile for remote user!
+    p = profile_handler.ensure_virtual_profile(author)  # TODO: WRITE THIS FUNCTION!!!                                             )
 
     mentions = comment_handler.extract_mentions(content)
 
     logging.info('About to add: author=%s, content=%s, mentions=%s' % (author,
                                                                        content,
                                                                        mentions))
-
     c = datamodel.Comment(
-        author=author,
-        posted_at=datetime.datetime.now(),  #should convert posted_at_str,
+        author_profile=p,
+        posted_at=datetime.datetime.now(),  #TODO: should convert posted_at_str,
         content=content,
         mentions=mentions)
     c.put()
@@ -142,8 +142,8 @@ class GhettoUserXRD(webapp.RequestHandler):
 
     # Is the profile one we know about?
     logging.info('Getting profile for %s' % user_uri)
-    p = profile_handler.get_profile_by_localname(user_uri)
-    key = p.publickey
+    p = profile_handler.get_profile_by_uri(user_uri)
+    key = p.public_key
 
     # The following will recurse if we have no public keys for our
     # own users, which would be a problem.

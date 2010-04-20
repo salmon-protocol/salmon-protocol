@@ -54,7 +54,7 @@ def to_atom_entry(c):
   <updated>%s</updated>
 </entry>"""
   logging.info('turning into atom entry: %s' % c)
-  args = (c.key(), c.author_nickname, c.author_id, c.content, c.posted_at)
+  args = (c.key(), c.author_profile.display_name, c.author_profile.profile_url, c.content, c.posted_at)
   return ATOM_ENTRY_TMPL % args
 
 def private_signing_key(author):
@@ -77,7 +77,6 @@ def do_salmon_slaps(mentions, c):
         slap_urls = key_urls = [link.href for link in item.links if link.rel
                                 == 'http://salmon-protocol.org/ns/salmon-mention']
         logging.info('About to do salmon slaps: subject %s, %s' % (subject, slap_urls))
-        # TODO: actually post to the salmon-mention URLs.
         
         # Build an envelope:
         text = to_atom_entry(c)
@@ -85,8 +84,8 @@ def do_salmon_slaps(mentions, c):
         envelope = magicsig.Envelope(
           raw_data_to_sign=text,
           data_type='application/atom+xml',
-          signer_uri='acct:' + c.author_id,
-          signer_key=private_signing_key(c.author))
+          signer_uri=c.author_profile.profile_url,
+          signer_key=private_signing_key(c.author_profile.profile_url))
         
         # Now send the envelope:
         body_to_send = envelope.ToXML()
@@ -111,7 +110,7 @@ class CommentHandler(webapp.RequestHandler):
     commentResults = db.GqlQuery("SELECT * FROM Comment WHERE parent_uri = :parent_uri", parent_uri=self.request.url)
     comments = []
     for comment in commentResults:
-      comments.append(self.decorate_comment(comment))
+      comments.append(profile_handler.decorate_comment(comment))
 
     mentions = []
     user_email = ''
@@ -128,7 +127,7 @@ class CommentHandler(webapp.RequestHandler):
     path = os.path.join(os.path.dirname(__file__), 'comments.html')
     self.response.out.write(template.render(path, template_values))
 
-  def decorate_comment(self, comment):
+  def DEPRECATED___decorate_comment(self, comment):
     comment.decorated_content = comment.content
     client = webfinger.Client()
     for mention in comment.mentions:
@@ -169,10 +168,7 @@ class CommentHandler(webapp.RequestHandler):
 
     logging.info('saw mentions: %s' % comment_mentions)
     c = datamodel.Comment(
-      author=user,
-      author_profile='http://' + p.host_authority + '/profile/' + p.localname,
-      author_nickname=p.nickname,
-      author_id=p.localname + '@' + p.host_authority,
+      author_profile=p,
       posted_at=datetime.datetime.now(),
       content=comment_text,
       mentions=comment_mentions,

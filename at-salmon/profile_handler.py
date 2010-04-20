@@ -42,8 +42,12 @@ def query_mentions(user_uri):
 
 def decorate_comment(comment):
   comment.decorated_content = comment.content
-  comment.author_uri = comment.author_id
+  comment.author_uri = comment.author_profile.profile_url
+  if not comment.author_uri:
+    comment.author_uri = 'about:blank'
   logging.info("Author_uri = %s" % comment.author_uri)
+  comment.author_display_name = comment.author_profile.display_name
+  
   client = webfinger.Client()
   for mention in comment.mentions:
     replacer = re.compile(mention)
@@ -64,7 +68,9 @@ def decorate_comment(comment):
   return comment
 
 
-_PROFILE_RE = re.compile('/profile/([^/.]+)', re.VERBOSE)
+_LOCAL_PROFILE_PATH_RE = re.compile('/profile/([^/]+)', re.VERBOSE)
+_PROFILE_RE = re.compile('https?://([^/]+)/profile/([^/]+)' ,re.VERBOSE)
+_ACCT_RE = re.compile('(acct:)?([^@]+)@(.+)', re.VERBOSE)
 
 def ensure_profile(user, host_authority):
   p = get_profile_for_user(user)
@@ -74,59 +80,89 @@ def ensure_profile(user, host_authority):
     return create_profile_for_user(user, host_authority)
 
 def get_profile_for_user(user):
-  profileResults = db.GqlQuery("SELECT * FROM Profile WHERE owner = :owner",
+  profileResults = db.GqlQuery("SELECT * FROM Profile WHERE local_owner = :owner",
                                  owner=user).fetch(1)
   if len(profileResults) == 0:
     return None
   else:
     return profileResults[0]
 
-_ACCT_RE = re.compile('(acct:)?([^@]+)@(.+)', re.VERBOSE)
+def make_profile_url(localname, host_authority):
+  return 'http://'+host_authority+'/profile/'+localname   
 
-def get_profile_by_localname(localname):
-  match = _ACCT_RE.match(localname)
+def get_profile_by_uri(uri):
+  # If it's an acct: URI, normalize to expected profile URL:
+  # TODO: This may not make sense.
+  match = _ACCT_RE.match(uri)
   if match:
-    localname = match.group(2)
+    url = make_profile_url(match.group(2), match.group(3))
+  else:
+    match = _PROFILE_RE.match(uri)
+    if match:
+      url = uri
+    else:
+      return None # Syntactically invalid
 
-  profileResults = db.GqlQuery("SELECT * FROM Profile WHERE localname = :localname",
-                                localname=localname).fetch(1)
+  profileResults = db.GqlQuery("SELECT * FROM Profile WHERE profile_url = :url",
+                                url=url).fetch(1)
   if len(profileResults) == 0:
     return None
   else:
     return profileResults[0]
 
 def create_profile_for_user(user, host_authority):
+  p = prepare_profile_for_user(user, host_authority)
+  p.put()
+  return p
+
+def prepare_profile_for_user(user, host_authority):
   localname_base = user.email().split('@')[0]
   localname = localname_base
   counter = 1
   while True:
-    r = db.GqlQuery("SELECT * FROM Profile WHERE localname = :localname",
-                    localname=localname).fetch(1)
+    url = make_profile_url(localname, host_authority)
+    r = db.GqlQuery("SELECT * FROM Profile WHERE profile_url = :url",
+                    url=url).fetch(1)
     if len(r) == 0:
       break  # Does not exist
     
     counter += 1
     localname = localname_base + str(counter)
-      
+  
   # (Small race condition here we don't care about for a demo)
   # (Using a default public key here instead of generating one on the fly.  Should
   # probably use None instead until the user writes a comment and then generate one.)
   p = datamodel.Profile(
-    localname = localname,
-    host_authority = host_authority,
-    owner = user,
-    nickname = localname,
-    publickey = 'RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1'
-                'u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww=='
-                '.AQAB')
-  p.put()
+    local_owner = user,
+    foreign_aliases = [],
+    profile_url = url,
+    display_name = localname,  # Just a default.
+    public_key = 'RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1'
+                 'u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww=='
+                 '.AQAB')
+  return p
+
+def ensure_virtual_profile(author_uri):
+  # TODO: Do this in a transaction
+  r = db.GqlQuery("SELECT * FROM Profile WHERE profile_url = :author_uri",
+                  author_uri=author_uri).fetch(1)
+  if len(r) == 0:
+    p = datamodel.Profile(
+      foreign_aliases = [author_uri],
+      profile_url = author_uri,
+      display_name = author_uri)
+    p.put()
+  else:
+    p = r[0]
+    
+  return p
 
 class ProfileHandler(webapp.RequestHandler):
   def get(self):
     logging.info("Saw a GET to /profile handler!")
     user = users.get_current_user()
     logging.info("Path = %s" % self.request.path)
-    match = _PROFILE_RE.match(self.request.path)
+    match = _LOCAL_PROFILE_PATH_RE.match(self.request.path)
     if not match:
       self.response.out.write('Badly formed profile URL!')
       self.response.set_status(400) 
@@ -139,26 +175,34 @@ class ProfileHandler(webapp.RequestHandler):
     if localname == '%40me':
       profile = ensure_profile(user, self.request.host)
     else:
-      profile = get_profile_by_localname(localname)
+      profile = get_profile_by_uri(make_profile_url(localname, self.request.host))
 
     if not profile:
       self.response.out.write("Profile not found!")
       self.response.set_status(404)
       return
 
+    # Check to see if currently logged in user is the owner of the profile, and flag if so.
     is_own_profile = False
-    if user:
-      is_own_profile = user.email == profile.owner.email
+    if user and profile.local_owner:
+      is_own_profile = user.email == profile.local_owner.email  #TODO: Fix this up with a GUID
 
-    fulluserid = profile.localname + '@' + profile.host_authority
+    # Edit the given profile:
+    m = _PROFILE_RE.match(profile.profile_url)
+    localname = ''
+    if m:
+      assert self.request.host == m.group(1)  # Must match local host for now
+      host_authority = m.group(1)
+      localname = m.group(2)
+
+    fulluserid = localname + '@' + host_authority
     template_values = {
       'fulluserid': fulluserid,
       'is_own_profile': is_own_profile,
-      'localname': profile.localname,
-      'nickname': profile.nickname,
+      'localname': localname,
+      'nickname': profile.display_name,
       'mentions': query_mentions(fulluserid),
-      'user': profile.owner.email,
-      'publickey': profile.publickey,
+      'publickey': profile.public_key,
       'logout_url': users.create_logout_url(self.request.path),
       'login_url' : users.create_login_url(self.request.path) }
     path = os.path.join(os.path.dirname(__file__), 'profile.html')
@@ -170,31 +214,28 @@ class ProfileHandler(webapp.RequestHandler):
     oldlocalname = self.request.get('oldlocalname')
     newnickname = self.request.get('newnickname')
     newpublickey = self.request.get('newpublickey')
-    profileResults = db.GqlQuery("SELECT * FROM Profile WHERE localname = :localname",
-                                 localname=oldlocalname).fetch(1)
+    
+    old_profile_url = make_profile_url(oldlocalname, self.request.host)
+    new_profile_url = make_profile_url(newlocalname, self.request.host)
+    profileResults = db.GqlQuery("SELECT * FROM Profile WHERE profile_url = :old_profile_url",
+                                 old_profile_url=old_profile_url).fetch(1)
     if len(profileResults) == 0:
       # Doesn't exist, so create it:
       logging.info("Creating %s %s %s" % (newlocalname, user, newnickname) )
-      p = datamodel.Profile(
-        localname = newlocalname,
-        host_authority = self.request.host,
-        owner = user,
-        nickname = newnickname,
-        publickey = newpublickey)
+      p = prepare_profile_for_user(user, self.request.host)
     else:
       # Already exists, update if ACL checks out:
       logging.info("Updating %s with %s %s %s" % (oldlocalname, newlocalname,
                                                   user, newnickname) )
       p = profileResults[0]
-      if p.owner == user:
-        p.nickname = newnickname
-        p.localname = newlocalname
-        p.host_authority = self.request.host
-        p.publickey = newpublickey
-      else:
+      if p.local_owner != user:
         self.response.set_status(403)  #Forbidden!
         return
+      
+    p.profile_url = new_profile_url
+    p.display_name = newnickname
+    p.public_key = newpublickey
+        
+    p.put()  # Create or update existing
 
-    p.put()
-
-    self.redirect('http://'+p.host_authority+'/profile/'+p.localname)
+    self.redirect(new_profile_url)
