@@ -1,6 +1,6 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html lang="en"><head><title>Draft: Magic Signatures</title>
-<meta http-equiv="Expires" content="Wed, 03 Mar 2010 01:34:37 +0000">
+<meta http-equiv="Expires" content="Tue, 20 Apr 2010 18:35:42 +0000">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <meta name="description" content="Magic Signatures">
 <meta name="keywords" content="signatures, PKI">
@@ -187,19 +187,19 @@ Standalone Magic Envelope Messages<br />
 Syndicating Magic Envelope Messages<br />
 <a href="#encoding">7.</a>&nbsp;
 Encoding of data and sig using base64url<br />
-&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor10">7.1.</a>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#encoding_details">7.1.</a>&nbsp;
 Encoding<br />
-&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor11">7.2.</a>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor10">7.2.</a>&nbsp;
 Decoding<br />
-<a href="#anchor12">8.</a>&nbsp;
+<a href="#signing">8.</a>&nbsp;
 Signing Messages<br />
-<a href="#anchor13">9.</a>&nbsp;
+<a href="#verifying">9.</a>&nbsp;
 Verifying Messages<br />
 <a href="#spki">10.</a>&nbsp;
 Simple Public Key Infrastructure<br />
-&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor14">10.1.</a>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor11">10.1.</a>&nbsp;
 The application/magic-key MIME type<br />
-&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor15">10.2.</a>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor12">10.2.</a>&nbsp;
 Discovery<br />
 <a href="#Acknowledgements">11.</a>&nbsp;
 Acknowledgements<br />
@@ -213,7 +213,7 @@ References<br />
 Normative References<br />
 &nbsp;&nbsp;&nbsp;&nbsp;<a href="#rfc.references2">14.2.</a>&nbsp;
 Informative References<br />
-<a href="#anchor18">Appendix&nbsp;A.</a>&nbsp;
+<a href="#anchor15">Appendix&nbsp;A.</a>&nbsp;
 Specification Feedback<br />
 <a href="#rfc.authors">&#167;</a>&nbsp;
 Authors' Addresses<br />
@@ -321,14 +321,20 @@ Magic Envelope Parameters</h3>
           signature algorithm, "RSA-SHA256", which all implementations MUST support.
 </dd>
 <dt>sig:</dt>
-<dd>The generated signature.  This is a string in the base64url encoded format as described
+<dd>A generated signature.  This is a string in the base64url encoded format as described
           above.  It is generated according to "Signing Messages" [ref], and verified according to 
-          "Verifying Messages" [ref]
+          "Verifying Messages" [ref].  A Magic Envelope has one or more
+          signatures.  Each signature has exactly one associated "keyhash"
+          parameter.
+</dd>
+<dt>keyhash:</dt>
+<dd>A key identifier attached to each generated
+          signature (sig).  A keyhash is the base64url-encoded SHA256 hash of the public signing key's
+          magicsig representation.  It is used to fingerprint exactly which of
+          several possible keys were used to produce the associated signature
+          string.
 </dd>
 </dl></blockquote><p>
-        <a class='info' href='#comment.TODO1'>[TODO1]<span> (</span><span class='info'>JP: Per benl, should the signature also cover the type, encoding, and algorithm parameters? This adds to complexity of signing and verifying.  The MIME type is probably the most important given that the other parameters are essentially hard coded constants at this point; I imagine there are attacks that involve modifying the MIME type though.  So this probably needs fixing.</span><span>)</span></a><a name='TODO1'></a>
-
-        <a class='info' href='#comment.TODO2'>[TODO2]<span> (</span><span class='info'>JP: Per benl, should be MIME types be text/*?  Following the example of Atom and JSON, which both use application/*, I think the existing draft is correct; but open to other opinions.</span><span>)</span></a><a name='TODO2'></a>
         
 </p>
 <a name="anchor4"></a><br /><hr />
@@ -357,7 +363,7 @@ The XML Serialization</h3>
             described in
             <a class='info' href='#params'>Section&nbsp;3.1<span> (</span><span class='info'>Magic Envelope Parameters</span><span>)</span></a>.  The element contains one REQUIRED attribute, "type",
             which contains the value of the "data_type" parameter.
-          
+        
 </dd>
 <dt>The &lt;me:encoding&gt; element (REQUIRED):</dt>
 <dd>Contains the value of the "encoding" parameter.
@@ -366,7 +372,10 @@ The XML Serialization</h3>
 <dd>Contains the value of the "alg" parameter.
 </dd>
 <dt>The &lt;me:sig&gt; element (REQUIRED):</dt>
-<dd>Contains the value of the "sig" parameter, an ASCII string.
+<dd>Contains the value
+          of the "sig" parameter, an ASCII string.  MAY be repeated multiple
+          times to record multiple signatures over the same text.  MUST have a keyhash
+          attribute containing the "keyhash" value for the signature.
 </dd>
 </dl></blockquote><p>
         Additional elements not defined by this specification MAY appear as children of the me:env
@@ -394,7 +403,7 @@ The XML Serialization</h3>
   &lt;/me:data&gt;
   &lt;me:encoding&gt;base64url&lt;/me:encoding&gt;
   &lt;me:alg&gt;RSA-SHA256&lt;/me:alg&gt;
-  &lt;me:sig&gt;
+  &lt;me:sig keyhash="4k8ikoyC2Xh+8BiIeQ+ob7Hcd2J7/Vj3uM61dy9iRMI="&gt;
     EvGSD2vi8qYcveHnb-rrlok07qnCXjn8YSeCDDXlbhILSabgvNsPpbe76up8w63i2f
     WHvLKJzeGLKfyHg8ZomQ
   &lt;/me:sig&gt;
@@ -409,11 +418,16 @@ The XML Serialization</h3>
 The JSON Serialization</h3>
 
 <p>Magic Envelope JSON MUST be well formed JSON as defined in <a class='info' href='#RFC4627'>[RFC4627]<span> (</span><span class='info'>Crockford, D., &ldquo;The application/json Media Type for JavaScript Object Notation (JSON),&rdquo; July&nbsp;2006.</span><span>)</span></a>.  The parameters are serialized into
-         a JSON object as a sequence of name/value pairs, using the parameter names "data", "data_type", "encoding", 
-         "alg", and "sig" directly.  These values MUST be represented as JSON strings.
-         The value of each name/value pair is a JSON string containing the corresponding parameter's string value.
+          a JSON object as a sequence of name/value pairs for the parameter names
+          "data", "data_type", "encoding", and "alg".  These values are
+          represented as JSON strings.
+          The "sig" parameter is represented as a "sigs" name whose value is an
+          array of objects; each object has a "value" with the
+          signature string, and a "keyhash" with the associated
+          "keyhash" parameter.
 </p>
-<p>Additional name/value pairs MAY appear within the JSON object and processors MUST ignore elements they
+<p>Additional name/value pairs MAY appear within the JSON object and
+         processors MUST ignore elements they
          do not understand.
 </p>
 <p>Example:      
@@ -436,9 +450,13 @@ The JSON Serialization</h3>
   "data_type": "application/atom+xml",
   "encoding": "base64url",
   "alg": "RSA-SHA256",
-  "sig": "
-    EvGSD2vi8qYcveHnb-rrlok07qnCXjn8YSeCDDXlbhILSabgvNsPpbe76up8w63i2f
-    WHvLKJzeGLKfyHg8ZomQ"
+  "sigs": [
+    {
+    "value": "EvGSD2vi8qYcveHnb-rrlok07qnCXjn8YSeCDDXlbhILSabgvNsPpbe76
+    up8w63i2fWHvLKJzeGLKfyHg8ZomQ",
+    "keyhash": "4k8ikoyC2Xh+8BiIeQ+ob7Hcd2J7/Vj3uM61dy9iRMI="
+    }
+  ]
 }
 </pre></div><p>
 
@@ -539,31 +557,25 @@ Encoding of data and sig using base64url</h3>
       arbitrary binary data (a stream of octets) and the armored form (an ASCII string). 
       The ASCII string is also chosen so as to be a valid and equivalent UTF-8 string.
 </p>
-<a name="anchor10"></a><br /><hr />
+<a name="encoding_details"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
 <a name="rfc.section.7.1"></a><h3>7.1.&nbsp;
 Encoding</h3>
 
 <p>
           The basic procedure is to use the URL and Filename safe variant of the base64 encoding as described in
-          <a class='info' href='#RFC4648'>RFC 4648<span> (</span><span class='info'>Josefsson, S., &ldquo;The Base16, Base32, and Base64 Data Encodings,&rdquo; October&nbsp;2006.</span><span>)</span></a> [RFC4648], section 5, and skipping any trailing padding
-          as described in section 3.2: 
-          </p>
-<ol class="text">
-<li>Base64url encode the binary data.
-</li>
-<li>Remove all '=' (0x3D) padding characters from the result.
-</li>
-</ol><p>
+          <a class='info' href='#RFC4648'>RFC 4648<span> (</span><span class='info'>Josefsson, S., &ldquo;The Base16, Base32, and Base64 Data Encodings,&rdquo; October&nbsp;2006.</span><span>)</span></a> [RFC4648], section 5, hereafter known as
+          "base64url" encoding.
           The result is a string that consists only of the ASCII alphanumeric characters along with
-          '-' and '_'.  In regular expression form, this is "^[A-Za-z0-9\-_]*$".  This is the normalized
-          form of the encoded data, and is the octet sequence that is used to generate the digital
+          '-' and '_', and possibly '='.  In regular expression form, this is
+          "^[A-Za-z0-9\-_]*=?=?=?$".  This is the normalized
+          form of the encoded data, and is the basis for the octet sequence that is used to generate the digital
           signature.  Implementations and transports MAY add arbitrary whitespace (ASCII values 0x09-0x0D and 0x20) 
           anywhere in this string after signing but before output so as to, e.g., comply with line length 
           restrictions in certain environments.
         
 </p>
-<a name="anchor11"></a><br /><hr />
+<a name="anchor10"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
 <a name="rfc.section.7.2"></a><h3>7.2.&nbsp;
 Decoding</h3>
@@ -576,50 +588,95 @@ Decoding</h3>
 <ol class="text">
 <li>Normalize the string by removing all whitespace characters from input.
 </li>
-<li>Pad the resulting string with trailing '=' (0x3D) characters to make its length evenly 
-            divisible by 4.
-</li>
 <li>Base64url decode the resulting string to produce the original binary data.
 </li>
 </ol><p>
         
 </p>
-<a name="anchor12"></a><br /><hr />
+<a name="signing"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
 <a name="rfc.section.8"></a><h3>8.&nbsp;
 Signing Messages</h3>
 
 <p>Signing a message consists of signing the contents of "data" using the "alg".  This specification
-      defines only the "RSA-SHA256" algorithm, meaning the RSASSA-PKCS1-v1_5 signature algorithm from 
+      defines only the "RSA-SHA256" algorithm, meaning the RSASSA-PKCS1-v1_5 signature algorithm from
       <a class='info' href='#RFC3447'>RFC 3447<span> (</span><span class='info'>Jonsson, J. and B. Kaliski, &ldquo;Public-Key Cryptography Standards (PKCS) #1: RSA Cryptography Specifications Version 2.1,&rdquo; February&nbsp;2003.</span><span>)</span></a> [RFC3447] section 8.2, also known as PKCS#1, using SHA-256 as the hash
       function for EMSA-PKCS1-v1_5.
-
-        <a class='info' href='#comment.TODO3'>[TODO3]<span> (</span><span class='info'>JP: Per benl, changed to specify SHA256.  Not sure if this means the formal algorithm name should change to RSASSA-PKCS1-v1_11 from RSASSA-PKCS1-v1_5.  Sample code needs updating to match.</span><span>)</span></a><a name='TODO3'></a>
-
-      
 </p>
 <p>The signature is computed as signature_octets = RSASSA-PKCS1-V1_5-SIGN (K, M), where K is the
-      private signing key and M is the exact armored string for "data" produced by [Ref encoding section].
+        private signing key and M is the message string given below.
 </p>
-<p>The signature is then encoded as in [Ref encoding section] and the resulting ASCII armored string
-      stored in "sig".
+<p>M is produced by concatenating the
+        following substrings together, separated by periods (ASCII 0x2E):
+        </p>
+<ol class="text">
+<li>The armored string for "data" produced by <a class='info' href='#encoding_details'>Section&nbsp;7.1<span> (</span><span class='info'>Encoding</span><span>)</span></a>
+</li>
+<li>The Base64url encoding of the "data_type" parameter
+</li>
+<li>The Base64url encoding of the "encoding" parameter
+</li>
+<li>The Base64url encoding of the "alg" parameter
+</li>
+</ol><p>
+        For example, if the
+        armored data is "Tm90IHJlYWxseSBBdG9t" with MIME type
+        application/atom+xml, then m would be the string:
+        "Tm90IHJlYWxseSBBdG9t.YXBwbGljYXRpb24vYXRvbSt4bWw=.YmFzZTY0dXJs.UlNBLVNIQTI1Ng=="
+      
 </p>
-<a name="anchor13"></a><br /><hr />
+<p>For convenience we
+        summarize the steps for the required EMSA-PKCS1-v1_5 with RSA-SHA256
+        algorithm here.  In
+        the following, '+' means string concatenation.
+        </p>
+<ol class="text">
+<li>Let hash = the SHA256 hash digest of M
+</li>
+<li>Let prefix = the constant byte sequence
+          <a class='info' href='#comment.NOTE1'>[NOTE1]<span> (</span><span class='info'>JP: The octets are Elvish, of an ancient mode, but the language is that of ASN.1, which I will not utter here. But this in the Common Tongue is what is said, close enough:</span><span>)</span></a><a name='NOTE1'></a>
+            [0x30, 0x31,
+            0x30, 0xd, 0x6,
+            0x9, 0x60, 0x86, 0x48, 0x1, 0x65, 0x3, 0x4, 0x2, 0x1, 0x5, 0x0, 0x4,
+            0x20]
+</li>
+<li>Let k = the number of bytes in the public key modulus
+</li>
+<li>Let padding = '\xFF' repeated (k - length(prefix+hash) - 3)
+            times
+</li>
+<li>Let emsa =  '\x00' + '\x01' + padding + '\x00' + prefix + hash
+</li>
+<li>RSA sign the emsa byte sequence
+</li>
+</ol><p>
+    
+</p>
+<p>The signature is then encoded as in <a class='info' href='#encoding_details'>Section&nbsp;7.1<span> (</span><span class='info'>Encoding</span><span>)</span></a> and the resulting ASCII armored string
+      stored as a "sig" signature.  The associated "keyhash" is the base64url
+      encoded respresentation of the SHA-256 hash of public key's application/magic-key
+      representation.
+</p>
+<a name="verifying"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
 <a name="rfc.section.9"></a><h3>9.&nbsp;
 Verifying Messages</h3>
 
-<p>Verifying a message consists of verifying that "sig" is a valid signature for "data" using "alg".
+<p>Verifying a message signature consists of verifying that "sig" is a valid signature for "data" using "alg".
       This specification defines only the "RSA-SHA256" verification algorithm, meaning the RSASSA-PKCS1-v1_5 
       verification algorithm from <a class='info' href='#RFC3447'>RFC 3447<span> (</span><span class='info'>Jonsson, J. and B. Kaliski, &ldquo;Public-Key Cryptography Standards (PKCS) #1: RSA Cryptography Specifications Version 2.1,&rdquo; February&nbsp;2003.</span><span>)</span></a> [RFC3447] section 8.2.1.
 </p>
-<p>The verification is performed by executing RSASSA-PKCS1-V1_5-VERIFY ((n, e), M, S), where (n ,e)
-      comprise the public key, M is the normalized armored string for "data" produced by [Ref decoding section],
-      and S is the decoded value of "sig".
+<p>The verification is performed by executing RSASSA-PKCS1-V1_5-VERIFY
+        ((n, e), M, S), where (n ,e)
+        comprise the public key, M is the message string
+        documented in <a class='info' href='#signing'>Section&nbsp;8<span> (</span><span class='info'>Signing Messages</span><span>)</span></a>,
+        and S is the decoded value of a selected "sig".  (Note that this
+        algorithm creates the emsa byte sequence as in <a class='info' href='#signing'>Section&nbsp;8<span> (</span><span class='info'>Signing Messages</span><span>)</span></a>
+        and then performing RSA verification using (n, e), emsa, and S.)
 </p>
 <p>The scope of the verification covers only the contents of the Magic Envelope itself.  In some
       cases, e.g., when using envelope data as provenance for enclosing data, the decoded "data" value
-      must be checked against or override the enclosing data.  A secure if lossy mechanism 
+      must be checked against or override the enclosing data.  A secure if lossy mechanism
       is to throw away the enclosing information and replace it with the output of the decoded "data".
       Another altnernative is to compare trees, override with signed information where there are conflicts,
       and annotate signed parts.  The correct mechanism depends on the security model required by the processor
@@ -635,10 +692,10 @@ Simple Public Key Infrastructure</h3>
 
 <p>This section defines a public key infrastructure based on URI discovery, as defined in [ref LRDD].
       Specifically, given a URI such as "acct:bob@example.com" or "http://example.com/bob", the corresponding 
-      public key(s) for that identifier can be found via LRDD discovery for links of type rel="magic-public-key".  
+      public key(s) for that identifier can be found via Webfinger/LRDD discovery for links of type rel="magic-public-key".  
       This specification defines a new MIME type for simple RSA public key(pairs).
 </p>
-<a name="anchor14"></a><br /><hr />
+<a name="anchor11"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
 <a name="rfc.section.10.1"></a><h3>10.1.&nbsp;
 The application/magic-key MIME type</h3>
@@ -647,18 +704,14 @@ The application/magic-key MIME type</h3>
         It consists of a string of ASCII text, separated into 3 or 4 components, with components separated 
         by a "." (0x2E) character.  The first component is the key type; this specification only defines
         the "RSA" key type for future upgradeability.  Thus a magic key consists of the string 
-        RSA.modulus(n).exponent(e)[.private_exponent(d)], where the private_exponent
-        is optional and only present for public/private keypairs.  Public keys consist of the pair (n, e)
-        needed as input to RSASSA-PKCS1-V1_5-VERIFY.
+        "RSA.modulus(n).exponent(e)"
+        The pair (n, e) is used as input to RSASSA-PKCS1-V1_5-VERIFY.
 </p>
 <p>Each of the components is first represented as an integer in network byte order (big endian) and
         encoded via the "base64url" mechanism described in <a class='info' href='#params'>Section&nbsp;3.1<span> (</span><span class='info'>Magic Envelope Parameters</span><span>)</span></a>.
-
-          <a class='info' href='#comment.TODO4'>[TODO4]<span> (</span><span class='info'>JP: Per benl, private keys often include extra information for efficiency; I'm not nearly as worried about the private key format except that we need something interoperable for testing, but it might be worth specifying something more here.</span><span>)</span></a><a name='TODO4'></a>
-
         
 </p>
-<a name="anchor15"></a><br /><hr />
+<a name="anchor12"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
 <a name="rfc.section.10.2"></a><h3>10.2.&nbsp;
 Discovery</h3>
@@ -666,22 +719,33 @@ Discovery</h3>
 <p>This section defines how to map from a URI based identifier to a public signing key for that 
         identifier.  Though the exact mechanism for a verifier to determine the identifier of the signer
         is outside the scope of this specification, the identifier MUST appear within the "data" parameter
-        and therefore be covered by the signature.  Many existing formats contain authorship or sender
+        and therefore be covered by the signature, and the public key ultimately
+        discovered using the identifier MUST hash to the "keyhash" parameter
+        associated with the signature.  (Note that the latter requirement is
+        is for efficiency rather than security.)
+        Many existing formats contain authorship or sender
         fields and these SHOULD be used or extended.  Specifications which rely on this one for digital
-        signatures MUST specify a format-dependent model for unambiguously determining the signer's URI
-        within the signed data.  This specification describes the subsequent step:
+        signatures MUST specify a format-dependent model for determining
+        potential signer URIs given the signed data.
+        This specification describes the subsequent step:
         How to take a general URI and map it to a public signing key.
-
-          <a class='info' href='#comment.TODO6'>[TODO6]<span> (</span><span class='info'>JP: There should most likely be a way to do multiple signatures over a single blob, as well as some generic way to disambiguate which key to use within the signature, but this  needs some security scrutiny as well and hopefully is a superset of the single-signer, single-key case that involves relaxing some constraints and re-reviewing pieces of the security.</span><span>)</span></a><a name='TODO6'></a>
-
         
 </p>
 <p>Given an identifier such as acct:bob@example.com or http://example.org/, first perform discovery
-        per <a class='info' href='#LRDD'>LRDD<span> (</span><span class='info'>Eran, E., &ldquo;LRDD: Link-based Resource Descriptor Discovery,&rdquo; .</span><span>)</span></a> [LRDD].  Once an XRD for the identifier is located, retrieve the href value(s) for
-        all links with rel="magic-public-key".  Each identified resource is a valid public signing key.
+          per <a class='info' href='#LRDD'>Webfinger/LRDD<span> (</span><span class='info'>Eran, E., &ldquo;LRDD: Link-based Resource Descriptor Discovery,&rdquo; .</span><span>)</span></a> [LRDD].  Once an XRD for the identifier is located, retrieve the href value(s) for
+          all links with rel="magic-public-key".  Each identified resource is a valid public signing key.
 </p>
 <p>Note that the data: URI scheme MAY be used, so that a public key can be embedded completely within
-        an XRD file (and covered by its security).
+        an XRD file (and covered by its security).  Alternatively the key can be
+        stored elsewhere and retrieved via a secure connection.
+</p>
+<p>Among the keys found, select the key to use for verification by using
+          the one whose SHA-256 hash matches the "keyhash" parameter of the
+          signature being processed.  Note that it is possible for one signature
+          to be verified but others to fail, and for only one of several
+          potential signers to actually have a verified signature.
+          Specifications which rely on this one MUST specify the semantics in
+          these cases.
 </p>
 <p>Example: href="data:application/magic-public-key;,RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww.AQAB"
 </p>
@@ -697,7 +761,7 @@ Acknowledgements</h3>
 <a name="rfc.section.12"></a><h3>12.&nbsp;
 IANA Considerations</h3>
 
-<p>O keeper of the sacred names and numbers, hear this specification's humble plea for media type registraions.
+<p>This specification introduces three new media types.
 </p>
 <p>The MIME media type for the XML serialization of a Magic Envelope is application/magic-env+xml.
 </p>
@@ -750,17 +814,17 @@ References</h3>
 <tr><td class="author-text" valign="top"><a name="LRDD">[LRDD]</a></td>
 <td class="author-text">Eran, E., &ldquo;<a href="http://tools.ietf.org/html/draft-hammer-discovery-04">LRDD: Link-based Resource Descriptor Discovery</a>.&rdquo;</td></tr>
 <tr><td class="author-text" valign="top"><a name="RFC2045">[RFC2045]</a></td>
-<td class="author-text"><a href="mailto:ned@innosoft.com">Freed, N.</a> and <a href="mailto:nsb@nsb.fv.com">N. Borenstein</a>, &ldquo;<a href="http://tools.ietf.org/html/rfc2045">Multipurpose Internet Mail Extensions (MIME) Part One: Format of Internet Message Bodies</a>,&rdquo; RFC&nbsp;2045, November&nbsp;1996 (<a href="ftp://ftp.isi.edu/in-notes/rfc2045.txt">TXT</a>).</td></tr>
+<td class="author-text"><a href="mailto:ned@innosoft.com">Freed, N.</a> and <a href="mailto:nsb@nsb.fv.com">N. Borenstein</a>, &ldquo;<a href="http://tools.ietf.org/html/rfc2045">Multipurpose Internet Mail Extensions (MIME) Part One: Format of Internet Message Bodies</a>,&rdquo; RFC&nbsp;2045, November&nbsp;1996 (<a href="http://www.rfc-editor.org/rfc/rfc2045.txt">TXT</a>).</td></tr>
 <tr><td class="author-text" valign="top"><a name="RFC2119">[RFC2119]</a></td>
-<td class="author-text"><a href="mailto:sob@harvard.edu">Bradner, S.</a>, &ldquo;<a href="http://tools.ietf.org/html/rfc2119">Key words for use in RFCs to Indicate Requirement Levels</a>,&rdquo; BCP&nbsp;14, RFC&nbsp;2119, March&nbsp;1997 (<a href="ftp://ftp.isi.edu/in-notes/rfc2119.txt">TXT</a>, <a href="http://xml.resource.org/public/rfc/html/rfc2119.html">HTML</a>, <a href="http://xml.resource.org/public/rfc/xml/rfc2119.xml">XML</a>).</td></tr>
+<td class="author-text"><a href="mailto:sob@harvard.edu">Bradner, S.</a>, &ldquo;<a href="http://tools.ietf.org/html/rfc2119">Key words for use in RFCs to Indicate Requirement Levels</a>,&rdquo; BCP&nbsp;14, RFC&nbsp;2119, March&nbsp;1997 (<a href="http://www.rfc-editor.org/rfc/rfc2119.txt">TXT</a>, <a href="http://xml.resource.org/public/rfc/html/rfc2119.html">HTML</a>, <a href="http://xml.resource.org/public/rfc/xml/rfc2119.xml">XML</a>).</td></tr>
 <tr><td class="author-text" valign="top"><a name="RFC3447">[RFC3447]</a></td>
-<td class="author-text">Jonsson, J. and B. Kaliski, &ldquo;<a href="http://tools.ietf.org/html/rfc3447">Public-Key Cryptography Standards (PKCS) #1: RSA Cryptography Specifications Version 2.1</a>,&rdquo; RFC&nbsp;3447, February&nbsp;2003 (<a href="ftp://ftp.rfc-editor.org/in-notes/rfc3447.txt">TXT</a>).</td></tr>
+<td class="author-text">Jonsson, J. and B. Kaliski, &ldquo;<a href="http://tools.ietf.org/html/rfc3447">Public-Key Cryptography Standards (PKCS) #1: RSA Cryptography Specifications Version 2.1</a>,&rdquo; RFC&nbsp;3447, February&nbsp;2003 (<a href="http://www.rfc-editor.org/rfc/rfc3447.txt">TXT</a>).</td></tr>
 <tr><td class="author-text" valign="top"><a name="RFC3552">[RFC3552]</a></td>
-<td class="author-text">Rescorla, E. and B. Korver, &ldquo;<a href="http://tools.ietf.org/html/rfc3552">Guidelines for Writing RFC Text on Security Considerations</a>,&rdquo; BCP&nbsp;72, RFC&nbsp;3552, July&nbsp;2003 (<a href="ftp://ftp.isi.edu/in-notes/rfc3552.txt">TXT</a>).</td></tr>
+<td class="author-text">Rescorla, E. and B. Korver, &ldquo;<a href="http://tools.ietf.org/html/rfc3552">Guidelines for Writing RFC Text on Security Considerations</a>,&rdquo; BCP&nbsp;72, RFC&nbsp;3552, July&nbsp;2003 (<a href="http://www.rfc-editor.org/rfc/rfc3552.txt">TXT</a>).</td></tr>
 <tr><td class="author-text" valign="top"><a name="RFC4627">[RFC4627]</a></td>
-<td class="author-text">Crockford, D., &ldquo;<a href="http://tools.ietf.org/html/rfc4627">The application/json Media Type for JavaScript Object Notation (JSON)</a>,&rdquo; RFC&nbsp;4627, July&nbsp;2006 (<a href="ftp://ftp.rfc-editor.org/in-notes/rfc4627.txt">TXT</a>).</td></tr>
+<td class="author-text">Crockford, D., &ldquo;<a href="http://tools.ietf.org/html/rfc4627">The application/json Media Type for JavaScript Object Notation (JSON)</a>,&rdquo; RFC&nbsp;4627, July&nbsp;2006 (<a href="http://www.rfc-editor.org/rfc/rfc4627.txt">TXT</a>).</td></tr>
 <tr><td class="author-text" valign="top"><a name="RFC4648">[RFC4648]</a></td>
-<td class="author-text">Josefsson, S., &ldquo;<a href="http://tools.ietf.org/html/rfc4648">The Base16, Base32, and Base64 Data Encodings</a>,&rdquo; RFC&nbsp;4648, October&nbsp;2006 (<a href="ftp://ftp.rfc-editor.org/in-notes/rfc4648.txt">TXT</a>).</td></tr>
+<td class="author-text">Josefsson, S., &ldquo;<a href="http://tools.ietf.org/html/rfc4648">The Base16, Base32, and Base64 Data Encodings</a>,&rdquo; RFC&nbsp;4648, October&nbsp;2006 (<a href="http://www.rfc-editor.org/rfc/rfc4648.txt">TXT</a>).</td></tr>
 <tr><td class="author-text" valign="top"><a name="XRD">[XRD]</a></td>
 <td class="author-text">Eran, EHL. and WN. Will, &ldquo;<a href="http://tools.oasis-open.org/version-control/browse/wsvn/xri/xrd/1.0/drafts/wd13/xrd-1.0-wd13.html">Extensible Resource Descriptor (XRD) Version 1.0, Working Draft 13</a>.&rdquo;</td></tr>
 </table>
@@ -773,7 +837,7 @@ References</h3>
 <td class="author-text">Narten, T. and H. Alvestrand, &ldquo;<a href="http://www.ietf.org/internet-drafts/draft-narten-iana-considerations-rfc2434bis-09.txt">Guidelines for Writing an IANA Considerations Section in RFCs</a>,&rdquo; draft-narten-iana-considerations-rfc2434bis-09 (work in progress), March&nbsp;2008 (<a href="http://www.ietf.org/internet-drafts/draft-narten-iana-considerations-rfc2434bis-09.txt">TXT</a>).</td></tr>
 </table>
 
-<a name="anchor18"></a><br /><hr />
+<a name="anchor15"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
 <a name="rfc.section.A"></a><h3>Appendix A.&nbsp;
 Specification Feedback</h3>

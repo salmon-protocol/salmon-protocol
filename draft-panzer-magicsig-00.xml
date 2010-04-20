@@ -112,16 +112,18 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
           In this specification, encoding MUST be the string "base64url", indicating the url safe base64
           encoding as described in <xref target="RFC4648">RFC 4648</xref>, without trailing padding.  All
           implementations MUST support this encoding.</t><t hangText="alg:">The algorithm used for the signature.  This specification describes only one 
-          signature algorithm, "RSA-SHA256", which all implementations MUST support.</t><t hangText="sig:">The generated signature.  This is a string in the base64url encoded format as described
+          signature algorithm, "RSA-SHA256", which all implementations MUST support.</t>
+        <t hangText="sig:">A generated signature.  This is a string in the base64url encoded format as described
           above.  It is generated according to "Signing Messages" [ref], and verified according to 
-          "Verifying Messages" [ref]</t></list>
-        <cref anchor="TODO1" source="JP">Per benl, should the signature also cover the type, encoding, and algorithm parameters?
-        This adds to complexity of signing and verifying.  The MIME type is probably the most important given that the other
-        parameters are essentially hard coded constants at this point; I imagine there are attacks that involve modifying the
-        MIME type though.  So this probably needs fixing.</cref>
-
-        <cref anchor="TODO2" source="JP">Per benl, should be MIME types be text/*?  Following the example of Atom and JSON, which
-        both use application/*, I think the existing draft is correct; but open to other opinions.</cref>
+          "Verifying Messages" [ref].  A Magic Envelope has one or more
+          signatures.  Each signature has exactly one associated "keyhash"
+          parameter.</t>
+        <t hangText="keyhash:">A key identifier attached to each generated
+          signature (sig).  A keyhash is the base64url-encoded SHA256 hash of the public signing key's
+          magicsig representation.  It is used to fingerprint exactly which of
+          several possible keys were used to produce the associated signature
+          string.</t>
+        </list>
         </t>
       </section>
       <section title="The XML Serialization">
@@ -140,7 +142,12 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
             described in
             <xref target="params"/>.  The element contains one REQUIRED attribute, "type",
             which contains the value of the "data_type" parameter.
-          </t><t hangText="The &lt;me:encoding&gt; element (REQUIRED):">Contains the value of the "encoding" parameter.</t><t hangText="The &lt;me:alg&gt; element (REQUIRED):">Contains the value of the "alg" parameter.</t><t hangText="The &lt;me:sig&gt; element (REQUIRED):">Contains the value of the "sig" parameter, an ASCII string.</t></list>
+        </t><t hangText="The &lt;me:encoding&gt; element (REQUIRED):">Contains the value of the "encoding" parameter.</t><t hangText="The &lt;me:alg&gt; element (REQUIRED):">Contains the value of the "alg" parameter.</t>
+        <t hangText="The &lt;me:sig&gt; element (REQUIRED):">Contains the value
+          of the "sig" parameter, an ASCII string.  MAY be repeated multiple
+          times to record multiple signatures over the same text.  MUST have a keyhash
+          attribute containing the "keyhash" value for the signature.</t>
+      </list>
         Additional elements not defined by this specification MAY appear as children of the me:env
         or me:provenance elements, but MUST NOT appear as children of any other element.  Processors MUST ignore
         elements they do not understand.</t>
@@ -164,20 +171,25 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
   </me:data>
   <me:encoding>base64url</me:encoding>
   <me:alg>RSA-SHA256</me:alg>
-  <me:sig>
+  <me:sig keyhash="4k8ikoyC2Xh+8BiIeQ+ob7Hcd2J7/Vj3uM61dy9iRMI=">
     EvGSD2vi8qYcveHnb-rrlok07qnCXjn8YSeCDDXlbhILSabgvNsPpbe76up8w63i2f
     WHvLKJzeGLKfyHg8ZomQ
   </me:sig>
 </me:env>
-		]]></artwork></figure>
+]]></artwork></figure>
         </t>
       </section>
       <section title="The JSON Serialization">
         <t>Magic Envelope JSON MUST be well formed JSON as defined in <xref target="RFC4627"/>.  The parameters are serialized into
-         a JSON object as a sequence of name/value pairs, using the parameter names "data", "data_type", "encoding", 
-         "alg", and "sig" directly.  These values MUST be represented as JSON strings.
-         The value of each name/value pair is a JSON string containing the corresponding parameter's string value.</t>
-        <t>Additional name/value pairs MAY appear within the JSON object and processors MUST ignore elements they
+          a JSON object as a sequence of name/value pairs for the parameter names
+          "data", "data_type", "encoding", and "alg".  These values are
+          represented as JSON strings.
+          The "sig" parameter is represented as a "sigs" name whose value is an
+          array of objects; each object has a "value" with the
+          signature string, and a "keyhash" with the associated
+          "keyhash" parameter.</t>
+        <t>Additional name/value pairs MAY appear within the JSON object and
+         processors MUST ignore elements they
          do not understand.</t>
         <t>Example:      
           <figure><artwork><![CDATA[
@@ -198,9 +210,13 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
   "data_type": "application/atom+xml",
   "encoding": "base64url",
   "alg": "RSA-SHA256",
-  "sig": "
-    EvGSD2vi8qYcveHnb-rrlok07qnCXjn8YSeCDDXlbhILSabgvNsPpbe76up8w63i2f
-    WHvLKJzeGLKfyHg8ZomQ"
+  "sigs": [
+    {
+    "value": "EvGSD2vi8qYcveHnb-rrlok07qnCXjn8YSeCDDXlbhILSabgvNsPpbe76
+    up8w63i2fWHvLKJzeGLKfyHg8ZomQ",
+    "keyhash": "4k8ikoyC2Xh+8BiIeQ+ob7Hcd2J7/Vj3uM61dy9iRMI="
+    }
+  ]
 }
           ]]></artwork></figure>
         </t>
@@ -277,15 +293,15 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
       a parameter in URLs, or as form data, without escaping.  This section defines the mapping between 
       arbitrary binary data (a stream of octets) and the armored form (an ASCII string). 
       The ASCII string is also chosen so as to be a valid and equivalent UTF-8 string.</t>
-      <section title="Encoding">
+      <section title="Encoding" anchor="encoding_details">
         <t>
           The basic procedure is to use the URL and Filename safe variant of the base64 encoding as described in
-          <xref target="RFC4648">RFC 4648</xref>, section 5, and skipping any trailing padding
-          as described in section 3.2: 
-          <list style="numbers"><t>Base64url encode the binary data.</t><t>Remove all '=' (0x3D) padding characters from the result.</t></list>
+          <xref target="RFC4648">RFC 4648</xref>, section 5, hereafter known as
+          "base64url" encoding.
           The result is a string that consists only of the ASCII alphanumeric characters along with
-          '-' and '_'.  In regular expression form, this is "^[A-Za-z0-9\-_]*$".  This is the normalized
-          form of the encoded data, and is the octet sequence that is used to generate the digital
+          '-' and '_', and possibly '='.  In regular expression form, this is
+          "^[A-Za-z0-9\-_]*=?=?=?$".  This is the normalized
+          form of the encoded data, and is the basis for the octet sequence that is used to generate the digital
           signature.  Implementations and transports MAY add arbitrary whitespace (ASCII values 0x09-0x0D and 0x20) 
           anywhere in this string after signing but before output so as to, e.g., comply with line length 
           restrictions in certain environments.
@@ -296,37 +312,74 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
           The basic procedure is the reverse of encoding, with the additional step that whitespace from the
           input should be ignored.  This is necessary for robustness because some transports may insert
           whitespace, and is useful to allow for human readable formatting of documents in any case.
-          <list style="numbers"><t>Normalize the string by removing all whitespace characters from input.</t><t>Pad the resulting string with trailing '=' (0x3D) characters to make its length evenly 
-            divisible by 4.</t><t>Base64url decode the resulting string to produce the original binary data.</t></list>
+          <list style="numbers">
+            <t>Normalize the string by removing all whitespace characters from input.</t>
+            <t>Base64url decode the resulting string to produce the original binary data.</t>
+          </list>
         </t>
       </section>
     </section>
-    <section title="Signing Messages">
+    <section title="Signing Messages" anchor="signing">
       <t>Signing a message consists of signing the contents of "data" using the "alg".  This specification
-      defines only the "RSA-SHA256" algorithm, meaning the RSASSA-PKCS1-v1_5 signature algorithm from 
+      defines only the "RSA-SHA256" algorithm, meaning the RSASSA-PKCS1-v1_5 signature algorithm from
       <xref target="RFC3447">RFC 3447</xref> section 8.2, also known as PKCS#1, using SHA-256 as the hash
-      function for EMSA-PKCS1-v1_5.
-
-        <cref anchor="TODO3" source="JP">Per benl, changed to specify SHA256.  Not sure if this means
-        the formal algorithm name should change to RSASSA-PKCS1-v1_11 from RSASSA-PKCS1-v1_5.  Sample
-        code needs updating to match.</cref>
-
-      </t>
+      function for EMSA-PKCS1-v1_5.</t>
       <t>The signature is computed as signature_octets = RSASSA-PKCS1-V1_5-SIGN (K, M), where K is the
-      private signing key and M is the exact armored string for "data" produced by [Ref encoding section].</t>
-      <t>The signature is then encoded as in [Ref encoding section] and the resulting ASCII armored string
-      stored in "sig".</t>
+        private signing key and M is the message string given below.</t>
+      <t>M is produced by concatenating the
+        following substrings together, separated by periods (ASCII 0x2E):
+        <list style="numbers">
+          <t>The armored string for "data" produced by <xref
+              target="encoding_details"/></t>
+          <t>The Base64url encoding of the "data_type" parameter</t>
+          <t>The Base64url encoding of the "encoding" parameter</t>
+          <t>The Base64url encoding of the "alg" parameter</t>
+        </list>
+        For example, if the
+        armored data is "Tm90IHJlYWxseSBBdG9t" with MIME type
+        application/atom+xml, then m would be the string:
+        "Tm90IHJlYWxseSBBdG9t.YXBwbGljYXRpb24vYXRvbSt4bWw=.YmFzZTY0dXJs.UlNBLVNIQTI1Ng=="
+      </t>
+      <t>For convenience we
+        summarize the steps for the required EMSA-PKCS1-v1_5 with RSA-SHA256
+        algorithm here.  In
+        the following, '+' means string concatenation.
+        <list style="numbers">
+          <t>Let hash = the SHA256 hash digest of M</t>
+          <t>Let prefix = the constant byte sequence
+          <cref anchor="NOTE1" source="JP">The octets are Elvish, of an ancient
+          mode, but the language is that of ASN.1, which I will not utter here.
+          But this in the Common Tongue is what is said, close enough:</cref>
+            [0x30, 0x31,
+            0x30, 0xd, 0x6,
+            0x9, 0x60, 0x86, 0x48, 0x1, 0x65, 0x3, 0x4, 0x2, 0x1, 0x5, 0x0, 0x4,
+            0x20]</t>
+          <t>Let k = the number of bytes in the public key modulus</t>
+          <t>Let padding = '\xFF' repeated (k - length(prefix+hash) - 3)
+            times</t>
+          <t>Let emsa =  '\x00' + '\x01' + padding + '\x00' + prefix + hash</t>
+          <t>RSA sign the emsa byte sequence</t>
+      </list>
+    </t>
+    <t>The signature is then encoded as in <xref target="encoding_details"/> and the resulting ASCII armored string
+      stored as a "sig" signature.  The associated "keyhash" is the base64url
+      encoded respresentation of the SHA-256 hash of public key's application/magic-key
+      representation.</t>
     </section>
-    <section title="Verifying Messages">
-      <t>Verifying a message consists of verifying that "sig" is a valid signature for "data" using "alg".
+    <section title="Verifying Messages" anchor="verifying">
+      <t>Verifying a message signature consists of verifying that "sig" is a valid signature for "data" using "alg".
       This specification defines only the "RSA-SHA256" verification algorithm, meaning the RSASSA-PKCS1-v1_5 
       verification algorithm from <xref target="RFC3447">RFC 3447</xref> section 8.2.1.</t>
-      <t>The verification is performed by executing RSASSA-PKCS1-V1_5-VERIFY ((n, e), M, S), where (n ,e)
-      comprise the public key, M is the normalized armored string for "data" produced by [Ref decoding section],
-      and S is the decoded value of "sig".</t>
+      <t>The verification is performed by executing RSASSA-PKCS1-V1_5-VERIFY
+        ((n, e), M, S), where (n ,e)
+        comprise the public key, M is the message string
+        documented in <xref target="signing"/>,
+        and S is the decoded value of a selected "sig".  (Note that this
+        algorithm creates the emsa byte sequence as in <xref target="signing"/>
+        and then performing RSA verification using (n, e), emsa, and S.)</t>
       <t>The scope of the verification covers only the contents of the Magic Envelope itself.  In some
       cases, e.g., when using envelope data as provenance for enclosing data, the decoded "data" value
-      must be checked against or override the enclosing data.  A secure if lossy mechanism 
+      must be checked against or override the enclosing data.  A secure if lossy mechanism
       is to throw away the enclosing information and replace it with the output of the decoded "data".
       Another altnernative is to compare trees, override with signed information where there are conflicts,
       and annotate signed parts.  The correct mechanism depends on the security model required by the processor
@@ -337,46 +390,47 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
     <section title="Simple Public Key Infrastructure" anchor="spki">
       <t>This section defines a public key infrastructure based on URI discovery, as defined in [ref LRDD].
       Specifically, given a URI such as "acct:bob@example.com" or "http://example.com/bob", the corresponding 
-      public key(s) for that identifier can be found via LRDD discovery for links of type rel="magic-public-key".  
+      public key(s) for that identifier can be found via Webfinger/LRDD discovery for links of type rel="magic-public-key".  
       This specification defines a new MIME type for simple RSA public key(pairs).</t>
       <section title="The application/magic-key MIME type">
         <t>The application/magic-key format is a very minimal format for representing public key data.
         It consists of a string of ASCII text, separated into 3 or 4 components, with components separated 
         by a "." (0x2E) character.  The first component is the key type; this specification only defines
         the "RSA" key type for future upgradeability.  Thus a magic key consists of the string 
-        RSA.modulus(n).exponent(e)[.private_exponent(d)], where the private_exponent
-        is optional and only present for public/private keypairs.  Public keys consist of the pair (n, e)
-        needed as input to RSASSA-PKCS1-V1_5-VERIFY.</t>
+        "RSA.modulus(n).exponent(e)"
+        The pair (n, e) is used as input to RSASSA-PKCS1-V1_5-VERIFY.</t>
         <t>Each of the components is first represented as an integer in network byte order (big endian) and
         encoded via the "base64url" mechanism described in <xref target="params"/>.
-
-          <cref anchor="TODO4" source="JP">Per benl, private keys often include extra information for efficiency;
-          I'm not nearly as worried about the private key format except that we need something interoperable
-          for testing, but it might be worth specifying something more here.</cref>
-
         </t>
       </section>
       <section title="Discovery">
         <t>This section defines how to map from a URI based identifier to a public signing key for that 
         identifier.  Though the exact mechanism for a verifier to determine the identifier of the signer
         is outside the scope of this specification, the identifier MUST appear within the "data" parameter
-        and therefore be covered by the signature.  Many existing formats contain authorship or sender
+        and therefore be covered by the signature, and the public key ultimately
+        discovered using the identifier MUST hash to the "keyhash" parameter
+        associated with the signature.  (Note that the latter requirement is
+        is for efficiency rather than security.)
+        Many existing formats contain authorship or sender
         fields and these SHOULD be used or extended.  Specifications which rely on this one for digital
-        signatures MUST specify a format-dependent model for unambiguously determining the signer's URI
-        within the signed data.  This specification describes the subsequent step:
+        signatures MUST specify a format-dependent model for determining
+        potential signer URIs given the signed data.
+        This specification describes the subsequent step:
         How to take a general URI and map it to a public signing key.
-
-          <cref anchor="TODO6" source="JP">There should most likely be a way to do multiple signatures over a single
-          blob, as well as some generic way to disambiguate which key to use within the signature, but this 
-          needs some security scrutiny as well and hopefully is a superset of the single-signer, single-key
-          case that involves relaxing some constraints and re-reviewing pieces of the security.</cref>
-
         </t>
         <t>Given an identifier such as acct:bob@example.com or http://example.org/, first perform discovery
-        per <xref target="LRDD">LRDD</xref>.  Once an XRD for the identifier is located, retrieve the href value(s) for
-        all links with rel="magic-public-key".  Each identified resource is a valid public signing key.</t>
+          per <xref target="LRDD">Webfinger/LRDD</xref>.  Once an XRD for the identifier is located, retrieve the href value(s) for
+          all links with rel="magic-public-key".  Each identified resource is a valid public signing key.</t>
         <t>Note that the data: URI scheme MAY be used, so that a public key can be embedded completely within
-        an XRD file (and covered by its security).</t>
+        an XRD file (and covered by its security).  Alternatively the key can be
+        stored elsewhere and retrieved via a secure connection.</t>
+        <t>Among the keys found, select the key to use for verification by using
+          the one whose SHA-256 hash matches the "keyhash" parameter of the
+          signature being processed.  Note that it is possible for one signature
+          to be verified but others to fail, and for only one of several
+          potential signers to actually have a verified signature.
+          Specifications which rely on this one MUST specify the semantics in
+          these cases.</t>
         <t>Example: href="data:application/magic-public-key;,RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww.AQAB"</t>
       </section>
     </section>
@@ -385,7 +439,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
     </section>
     <!-- Possibly a 'Contributors' section ... -->
     <section anchor="IANA" title="IANA Considerations">
-      <t>O keeper of the sacred names and numbers, hear this specification's humble plea for media type registraions.</t>
+      <t>This specification introduces three new media types.</t>
       <t>The MIME media type for the XML serialization of a Magic Envelope is application/magic-env+xml.</t>
       <t>Type name: application</t>
       <t>Subtype name: magic-env+xml</t>

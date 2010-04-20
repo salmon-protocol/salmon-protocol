@@ -1,6 +1,6 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html lang="en"><head><title>Draft: The Salmon Protocol</title>
-<meta http-equiv="Expires" content="Wed, 03 Mar 2010 01:35:46 +0000">
+<meta http-equiv="Expires" content="Tue, 20 Apr 2010 18:35:36 +0000">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <meta name="description" content="The Salmon Protocol">
 <meta name="generator" content="xml2rfc v1.34 (http://xml.resource.org/)">
@@ -170,11 +170,15 @@ Requirements Language<br />
 Definitions<br />
 <a href="#SD">3.</a>&nbsp;
 Salmon Discovery<br />
-&nbsp;&nbsp;&nbsp;&nbsp;<a href="#SRLR">3.1.</a>&nbsp;
-The 'salmon-replies' Link Relation<br />
-&nbsp;&nbsp;&nbsp;&nbsp;<a href="#SMLR">3.2.</a>&nbsp;
-The 'salmon-mention' Link Relation<br />
-&nbsp;&nbsp;&nbsp;&nbsp;<a href="#ALR">3.3.</a>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#SLR">3.1.</a>&nbsp;
+The 'salmon' Link Relation<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#SRLR">3.2.</a>&nbsp;
+Salmon Links for Replies<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#SMLR">3.3.</a>&nbsp;
+Salmon Links for Mentions<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#SALR">3.3.1.</a>&nbsp;
+The Mentioned Link Relation<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#ALR">3.4.</a>&nbsp;
 Additional Link Relations<br />
 <a href="#RPF">4.</a>&nbsp;
 Replies Protocol Flow<br />
@@ -288,27 +292,47 @@ Salmon Discovery</h3>
         and HTML pages, and discoverable URIs per <a class='info' href='#LRDD'>[LRDD]<span> (</span><span class='info'>Eran, E., &ldquo;LRDD: Link-based Resource Descriptor Discovery,&rdquo; .</span><span>)</span></a>,
         <a class='info' href='#Webfinger'>[Webfinger]<span> (</span><span class='info'>Fitzpatrick, B., Hammer-Lahav, E., Cook, B., Panzer, J., and J. Gregorio, &ldquo;The Webfinger Protocol,&rdquo; .</span><span>)</span></a>, and <a class='info' href='#XRD'>[XRD]<span> (</span><span class='info'>Hammer-Lahav, E. and W. Norris, &ldquo;Extensible Resource Descriptor (XRD) Version 1.0, Working Draft             13,&rdquo; .</span><span>)</span></a>.  The
         following sections define the
-        semantics of new link relations introduced by Salmon.
+        semantics of the new link relation introduced by Salmon.
+</p>
+<a name="SLR"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.3.1"></a><h3>3.1.&nbsp;
+The 'salmon' Link Relation</h3>
+
+<p>The http://salmon-protocol.org/ns/salmon link relation specifies a
+          Salmon endpoint used to receive salmon of interest to the entity
+          controlling the associated resource.  These are typically comments,
+          replies, or mentions that involve the resource.  The following
+          sections document the usage of this link relation in different
+          contexts.  Additional contexts may be added in the future and
+          Salmon-aware processors MUST ignore contexts they cannot process.
+</p>
+<p>Servers are able
+           to differentiate between the different use cases via the signed
+           content of the salmon itself.  Note that a salmon may be both
+           a reply and a mention at the same time, and servers may provide
+           very general catch-all endpoints.
 </p>
 <a name="SRLR"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
-<a name="rfc.section.3.1"></a><h3>3.1.&nbsp;
-The 'salmon-replies' Link Relation</h3>
+<a name="rfc.section.3.2"></a><h3>3.2.&nbsp;
+Salmon Links for Replies</h3>
 
-<p>The http://salmon-protocol.org/ns/salmon-replies link relation
-          specifies a Salmon endpoint to be
+<p>The http://salmon-protocol.org/ns/salmon link relation
+          may specify a Salmon endpoint to be
           used for any replies to or commentaries about its associated resource.
-          It may be placed in an atom:entry, an atom:feed, or an HTML page.
+          It may appear as a child of atom:entry, an atom:feed, or a HEAD
+          element of an HTML page.
           When placed at a feed level, all entries within the feed which do not
-          have salmon-replies links of their own inherit their feed's
-          salmon-replies link (which MUST be obtained from the entry's
+          have salmon replies links of their own inherit their feed's
+          salmon replies link (which MUST be obtained from the entry's
           atom:source element if it is present).
 </p>
 <p>Salmon generators MAY choose to send content that is a reply to the
-          appropriate salmon-replies endpoint.  Generators SHOULD only do this
+          appropriate salmon replies endpoint.  Generators SHOULD only do this
           with user consent (see <a class='info' href='#UX'>Section&nbsp;10<span> (</span><span class='info'>User Experience and Privacy</span><span>)</span></a>).
 </p>
-<p>For an Atom feed, any salmon sent to the salmon-replies endpoint MUST
+<p>For an Atom feed, any salmon sent to the salmon replies endpoint MUST
           have a thr:in-reply-to element set to an entry covered by the
           endpoint per <a class='info' href='#RFC4685'>[RFC4685]<span> (</span><span class='info'>Snell, J., &ldquo;Atom Threading Extensions,&rdquo; September&nbsp;2006.</span><span>)</span></a>.
 </p>
@@ -316,7 +340,7 @@ The 'salmon-replies' Link Relation</h3>
 <div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
 &lt;feed xmlns='http://www.w3.org/2005/Atom'&gt;
   ...
-  &lt;link rel="http://salmon-protocol.org/ns/salmon-replies"
+  &lt;link rel="http://salmon-protocol.org/ns/salmon"
         href="http://example.org/all-replies-endpoint"/&gt;
 &lt;/feed&gt;
 </pre></div><p>
@@ -324,15 +348,18 @@ The 'salmon-replies' Link Relation</h3>
 </p>
 <a name="SMLR"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
-<a name="rfc.section.3.2"></a><h3>3.2.&nbsp;
-The 'salmon-mention' Link Relation</h3>
+<a name="rfc.section.3.3"></a><h3>3.3.&nbsp;
+Salmon Links for Mentions</h3>
 
-<p>The http://salmon-protocol.org/ns/salmon-mention link relation
-          specifies a Salmon endpoint to be
-          used for direct mentions about the entity controlling the associated
-          resource.  Typically this will be a user account.  For example, it may
-          appear in the Webfinger <a class='info' href='#Webfinger'>[Webfinger]<span> (</span><span class='info'>Fitzpatrick, B., Hammer-Lahav, E., Cook, B., Panzer, J., and J. Gregorio, &ldquo;The Webfinger Protocol,&rdquo; .</span><span>)</span></a>
-          XRD document associated with a user.
+<p>The http://salmon-protocol.org/ns/salmon link relation
+          may specify a Salmon endpoint used to notify a resource,
+          typically a user account, about external mentions of that
+          resource.  For a user account, the salmon mention link
+          SHOULD appear in the Webfinger <a class='info' href='#Webfinger'>[Webfinger]<span> (</span><span class='info'>Fitzpatrick, B., Hammer-Lahav, E., Cook, B., Panzer, J., and J. Gregorio, &ldquo;The Webfinger Protocol,&rdquo; .</span><span>)</span></a>
+          XRD document for the user account.
+</p>
+<p>Salmon generators SHOULD only send salmon that explicitly
+          mention the target resource.
 </p>
 <p>Example in a user's XRD file:  </p>
 <div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
@@ -344,9 +371,37 @@ The 'salmon-mention' Link Relation</h3>
 </pre></div><p>
 
 </p>
+<a name="SALR"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.3.3.1"></a><h3>3.3.1.&nbsp;
+The Mentioned Link Relation</h3>
+
+<p>The http://salmon-protocol.org/ns/mentioned link relation
+            specifies a user or resource mentioned in the
+            salmon content.  The presence of the link indicates that the
+            author of the salmon intends to bring it to the target's
+            attention, implying both permission to see the content and
+            a desire for the target to be notified.
+</p>
+<p>Salmon generators SHOULD include a Salmon mentions link
+            specifying mentioned resources when they know the user's
+            intent.  Salmon recipients SHOULD use Salmon mentions links
+            to determine where to route notifications.
+</p>
+<p>Example Atom entry with a mention:  </p>
+<div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+&lt;entry xmlns='http://www.w3.org/2005/Atom'&gt;
+...
+  &lt;link rel="http://salmon-prototol.org/ns/salmon"
+        href="acct:user@example.com" /&gt;
+  &lt;content&gt;Hey there @User!&lt;/content&gt;
+&lt;/entry&gt;
+</pre></div><p>
+
+</p>
 <a name="ALR"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
-<a name="rfc.section.3.3"></a><h3>3.3.&nbsp;
+<a name="rfc.section.3.4"></a><h3>3.4.&nbsp;
 Additional Link Relations</h3>
 
 <p>Additional salmon link relations MAY be defined at any time for
@@ -376,7 +431,7 @@ Replies Protocol Flow</h3>
         the Magic Signatures specification
         <a class='info' href='#MagicSig'>[MagicSig]<span> (</span><span class='info'>Panzer, J. and B. Laurie, &ldquo;Magic Signatures,&rdquo; .</span><span>)</span></a>.  The generator then POSTs the resulting
         envelope
-        to the salmon-replies endpoint for the parent entry.
+        to the salmon endpoint for the parent entry.
 </p>
 <p>For example, this reply</p>
 <div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
@@ -395,8 +450,8 @@ Replies Protocol Flow</h3>
 </pre></div><p>
 
 </p>
-<p>would generate this POST request to the salmon-replies endpoint
-      discovered earlier (see <a class='info' href='#SRLR'>Section&nbsp;3.1<span> (</span><span class='info'>The 'salmon-replies' Link Relation</span><span>)</span></a>):</p>
+<p>would generate this POST request to the salmon endpoint
+      discovered earlier (see <a class='info' href='#SRLR'>Section&nbsp;3.2<span> (</span><span class='info'>Salmon Links for Replies</span><span>)</span></a>):</p>
 <div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
 POST /all-replies-endpoint HTTP/1.1
 Host: example.org
@@ -743,7 +798,7 @@ Activity Streams</h3>
         for their use case.
 </p>
 <p>Nearly any activity verb could be included in a salmon mention
-        <a class='info' href='#SMLR'>Section&nbsp;3.2<span> (</span><span class='info'>The 'salmon-mention' Link Relation</span><span>)</span></a>.  The 'Post', 'Share', 'Save', and
+        <a class='info' href='#SMLR'>Section&nbsp;3.3<span> (</span><span class='info'>Salmon Links for Mentions</span><span>)</span></a>.  The 'Post', 'Share', 'Save', and
         'Start Following'
         verbs <a class='info' href='#AABS'>[AABS]<span> (</span><span class='info'>Atkins, M., Recordon, D., Messina, C., Keller, M., Steinberg, A., and R. Dolin, &ldquo;Atom Activity Base Schema (Draft),&rdquo; .</span><span>)</span></a> are particularly pertinent and salmon
         generators are encouraged to use the most specific verb they can
@@ -817,11 +872,11 @@ Security Considerations</h3>
 <tr><td class="author-text" valign="top"><a name="MagicSig">[MagicSig]</a></td>
 <td class="author-text">Panzer, J. and B. Laurie, &ldquo;<a href="http://salmon-protocol.googlecode.com/svn/trunk/draft-panzer-magicsig-00.html">Magic Signatures</a>.&rdquo;</td></tr>
 <tr><td class="author-text" valign="top"><a name="RFC2119">[RFC2119]</a></td>
-<td class="author-text"><a href="mailto:sob@harvard.edu">Bradner, S.</a>, &ldquo;<a href="http://tools.ietf.org/html/rfc2119">Key words for use in RFCs to Indicate Requirement Levels</a>,&rdquo; BCP&nbsp;14, RFC&nbsp;2119, March&nbsp;1997 (<a href="ftp://ftp.isi.edu/in-notes/rfc2119.txt">TXT</a>, <a href="http://xml.resource.org/public/rfc/html/rfc2119.html">HTML</a>, <a href="http://xml.resource.org/public/rfc/xml/rfc2119.xml">XML</a>).</td></tr>
+<td class="author-text"><a href="mailto:sob@harvard.edu">Bradner, S.</a>, &ldquo;<a href="http://tools.ietf.org/html/rfc2119">Key words for use in RFCs to Indicate Requirement Levels</a>,&rdquo; BCP&nbsp;14, RFC&nbsp;2119, March&nbsp;1997 (<a href="http://www.rfc-editor.org/rfc/rfc2119.txt">TXT</a>, <a href="http://xml.resource.org/public/rfc/html/rfc2119.html">HTML</a>, <a href="http://xml.resource.org/public/rfc/xml/rfc2119.xml">XML</a>).</td></tr>
 <tr><td class="author-text" valign="top"><a name="RFC4287">[RFC4287]</a></td>
-<td class="author-text"><a href="mailto:mnot@pobox.com">Nottingham, M., Ed.</a> and <a href="mailto:rfsayre@boswijck.com">R. Sayre, Ed.</a>, &ldquo;<a href="http://tools.ietf.org/html/rfc4287">The Atom Syndication Format</a>,&rdquo; RFC&nbsp;4287, December&nbsp;2005 (<a href="ftp://ftp.isi.edu/in-notes/rfc4287.txt">TXT</a>, <a href="http://xml.resource.org/public/rfc/html/rfc4287.html">HTML</a>, <a href="http://xml.resource.org/public/rfc/xml/rfc4287.xml">XML</a>).</td></tr>
+<td class="author-text"><a href="mailto:mnot@pobox.com">Nottingham, M., Ed.</a> and <a href="mailto:rfsayre@boswijck.com">R. Sayre, Ed.</a>, &ldquo;<a href="http://tools.ietf.org/html/rfc4287">The Atom Syndication Format</a>,&rdquo; RFC&nbsp;4287, December&nbsp;2005 (<a href="http://www.rfc-editor.org/rfc/rfc4287.txt">TXT</a>, <a href="http://xml.resource.org/public/rfc/html/rfc4287.html">HTML</a>, <a href="http://xml.resource.org/public/rfc/xml/rfc4287.xml">XML</a>).</td></tr>
 <tr><td class="author-text" valign="top"><a name="RFC4685">[RFC4685]</a></td>
-<td class="author-text">Snell, J., &ldquo;<a href="http://tools.ietf.org/html/rfc4685">Atom Threading Extensions</a>,&rdquo; RFC&nbsp;4685, September&nbsp;2006 (<a href="ftp://ftp.isi.edu/in-notes/rfc4685.txt">TXT</a>).</td></tr>
+<td class="author-text">Snell, J., &ldquo;<a href="http://tools.ietf.org/html/rfc4685">Atom Threading Extensions</a>,&rdquo; RFC&nbsp;4685, September&nbsp;2006 (<a href="http://www.rfc-editor.org/rfc/rfc4685.txt">TXT</a>).</td></tr>
 <tr><td class="author-text" valign="top"><a name="Tombstones">[Tombstones]</a></td>
 <td class="author-text">Snell, J., &ldquo;<a href="http://tools.ietf.org/id/draft-snell-atompub-tombstones-06.txt">The Atom "deleted-entry" Element</a>.&rdquo;</td></tr>
 <tr><td class="author-text" valign="top"><a name="WebLinking">[WebLinking]</a></td>
