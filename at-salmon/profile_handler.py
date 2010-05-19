@@ -33,7 +33,7 @@ import datamodel
 
 def query_mentions(user_uri):
   mentions = []
-  mentionResults = db.GqlQuery("SELECT * FROM Comment where mentions = :user_uri",
+  mentionResults = db.GqlQuery("SELECT * FROM Comment where mentions = :user_uri ORDER BY posted_at DESC",
                                user_uri=user_uri)
   for mention in mentionResults:
     mentions.append(decorate_comment(mention))

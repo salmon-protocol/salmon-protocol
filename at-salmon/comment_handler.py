@@ -107,7 +107,7 @@ def do_salmon_slaps(mentions, c):
 class CommentHandler(webapp.RequestHandler):
   def get(self):
     user = users.get_current_user()
-    commentResults = db.GqlQuery("SELECT * FROM Comment WHERE parent_uri = :parent_uri", parent_uri=self.request.url)
+    commentResults = db.GqlQuery("SELECT * FROM Comment WHERE parent_uri = :parent_uri ORDER BY posted_at DESC", parent_uri=self.request.url)
     comments = []
     for comment in commentResults:
       comments.append(profile_handler.decorate_comment(comment))

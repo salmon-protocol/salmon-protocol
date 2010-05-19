@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-  {% block title %}At-Salmon Comments on {{ parent_uri }}{% endblock %}
+  {% block title %}Comments on {{ parent_uri }}{% endblock %}
   {% block content %}
-    <h2>At-Salmon Comments on {{ parent_uri }}</h2>
+    <h2>Comments on {{ parent_uri }}</h2>
   	<div id="comments">
       <ul id="comments">
         {% for comment in comments %}
