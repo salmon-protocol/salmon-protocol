@@ -18,99 +18,27 @@
 
 __author__ = 'jpanzer@google.com (John Panzer)'
 
+import mox
+
+import copy
 import re
+import time
 import unittest
 try:
   import google3  # GOOGLE local modification
 except ImportError:
   pass
-import magicsig
 
-#import sys
-
-
-def _StripWS(s):
-  """Strips all whitespace from a string."""
-  return re.sub('\s+', '', s)
+import exceptions
+import magicsig_hjfreyer as magicsig
+import utils
 
 
-class TestMagicEnvelopeProtocol(unittest.TestCase):
-  """Tests Magic Envelope protocol."""
-
-  class MockKeyRetriever(magicsig.KeyRetriever):
-    def LookupPublicKey(self, signer_uri):
-      assert signer_uri
-      return  ('RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1'
+TEST_PUBLIC_KEY = ('RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1'
                'u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww=='
                '.AQAB'
                '.Lgy_yL3hsLBngkFdDw1Jy9TmSRMiH6yihYetQ8jy-jZXdsZXd8V5'
                'ub3kuBHHk4M39i3TduIkcrjcsiWQb77D8Q==')
-
-  magicenv = None
-  test_atom = """<?xml version='1.0' encoding='UTF-8'?>
-    <entry xmlns='http://www.w3.org/2005/Atom'>
-    <id>tag:example.com,2009:cmt-0.44775718</id>
-      <author><name>test@example.com</name><uri>acct:test@example.com</uri>
-      </author>
-      <content>Salmon swim upstream!</content>
-      <title>Salmon swim upstream!</title>
-      <updated>2009-12-18T20:04:03Z</updated>
-    </entry>
-  """
-
-  test_atom_multi_author = """<?xml version='1.0' encoding='UTF-8'?>
-    <entry xmlns='http://www.w3.org/2005/Atom'>
-    <id>tag:example.com,2009:cmt-0.44775718</id>
-      <author><name>alice@example.com</name><uri>acct:alice@example.com</uri>
-      </author>
-      <author><name>bob@example.com</name><uri>acct:bob@example.com</uri>
-      </author>
-      <content>Salmon swim upstream!</content>
-      <title>Salmon swim upstream!</title>
-      <updated>2009-12-18T20:04:03Z</updated>
-    </entry>
-  """
-
-  def setUp(self):
-    self.magicenv = magicsig.MagicEnvelopeProtocol()
-    self.magicenv.key_retriever = self.MockKeyRetriever()
-
-  def testGetSignerURI(self):
-    # Trival case of one author:
-    a = self.magicenv.GetSignerURI(self.test_atom)
-    self.assertEquals(a, 'acct:test@example.com')
-
-    # Multi author case:
-    a = self.magicenv.GetSignerURI(self.test_atom_multi_author)
-    self.assertEquals(a, 'acct:alice@example.com')
-
-  def testIsAllowedSigner(self):
-    # Check that we can recognize the author
-    self.assertTrue(self.magicenv.IsAllowedSigner(self.test_atom,
-                                                  'acct:test@example.com'))
-
-    # Method requires a real URI
-    self.assertFalse(self.magicenv.IsAllowedSigner(self.test_atom,
-                                                   'test@example.com'))
-
-    # We recognize only the first of multiple authors
-    self.assertTrue(self.magicenv.IsAllowedSigner(self.test_atom_multi_author,
-                                                  'acct:alice@example.com'))
-    self.assertFalse(self.magicenv.IsAllowedSigner(self.test_atom_multi_author,
-                                                   'acct:bob@example.com'))
-
-  def testNormalizeUserIds(self):
-    id1 = 'http://example.com'
-    id2 = 'https://www.example.org/bob'
-    id3 = 'acct:bob@example.org'
-    em3 = 'bob@example.org'
-
-    self.assertEquals(magicsig.NormalizeUserIdToUri(id1), id1)
-    self.assertEquals(magicsig.NormalizeUserIdToUri(id2), id2)
-    self.assertEquals(magicsig.NormalizeUserIdToUri(id3), id3)
-    self.assertEquals(magicsig.NormalizeUserIdToUri(em3), id3)
-    self.assertEquals(magicsig.NormalizeUserIdToUri(' '+id1+' '), id1)
-
 
 TEST_PRIVATE_KEY = ('RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1'
                     'u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww=='
@@ -118,96 +46,179 @@ TEST_PRIVATE_KEY = ('RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1'
                     '.Lgy_yL3hsLBngkFdDw1Jy9TmSRMiH6yihYetQ8jy-jZXdsZXd8V5'
                     'ub3kuBHHk4M39i3TduIkcrjcsiWQb77D8Q==')
 
+TEST_ATOM = """<?xml version='1.0' encoding='UTF-8'?>
+<entry xmlns='http://www.w3.org/2005/Atom'>
+  <id>tag:example.com,2009:cmt-0.44775718</id>
+  <author><name>test@example.com</name><uri>acct:test@example.com</uri>
+  </author>
+  <content>Salmon swim upstream!</content>
+  <title>Salmon swim upstream!</title>
+  <updated>2009-12-18T20:04:03Z</updated>
+</entry>
+"""
 
-class TestMagicEnvelope(unittest.TestCase):
-  """Tests the Envelope class."""
+TEST_NON_ATOM = 'Some aribtrary string.'
 
-  class MockKeyRetriever(magicsig.KeyRetriever):
-    def LookupPublicKey(self, signer_uri):
-      assert signer_uri
-      return TEST_PRIVATE_KEY
+TEST_ENVELOPE = magicsig.Envelope(
+    data="""PD94bWwgdmVyc2lvbj0nMS4wJyBlbmNvZGluZz0nVVRGLTgnPz4KPGVu
+    dHJ5IHhtbG5zPSdodHRwOi8vd3d3LnczLm9yZy8yMDA1L0F0b20nPgog
+    IDxpZD50YWc6ZXhhbXBsZS5jb20sMjAwOTpjbXQtMC40NDc3NTcxODwv
+    aWQ-CiAgPGF1dGhvcj48bmFtZT50ZXN0QGV4YW1wbGUuY29tPC9uYW1l
+    Pjx1cmk-YWNjdDp0ZXN0QGV4YW1wbGUuY29tPC91cmk-CiAgPC9hdXRo
+    b3I-CiAgPGNvbnRlbnQ-U2FsbW9uIHN3aW0gdXBzdHJlYW0hPC9jb250
+    ZW50PgogIDx0aXRsZT5TYWxtb24gc3dpbSB1cHN0cmVhbSE8L3RpdGxl
+    PgogIDx1cGRhdGVkPjIwMDktMTItMThUMjA6MDQ6MDNaPC91cGRhdGVk
+    Pgo8L2VudHJ5Pgo=""",
+    data_type='application/atom+xml',
+    sig="""RL3pTqRn7RAHoEKwtZCVDNgwHrNB0WJxFt8fq6l0HAGcIN4BLYzUC5hp
+    GySsnow2ibw3bgUVeiZMU0dPfrKBFA==""")
 
-  test_atom = """<?xml version='1.0' encoding='UTF-8'?>
-    <entry xmlns='http://www.w3.org/2005/Atom'>
-    <id>tag:example.com,2009:cmt-0.44775718</id>
-      <author><name>test@example.com</name><uri>acct:test@example.com</uri>
-      </author>
-      <content>Salmon swim upstream!</content>
-      <title>Salmon swim upstream!</title>
-      <updated>2009-12-18T20:04:03Z</updated>
-    </entry>
-  """
+TEST_NON_ATOM_ENVELOPE = magicsig.Envelope(
+    data='U29tZSBhcmlidHJhcnkgc3RyaW5nLg==',
+    data_type='text/plain',
+    sig="""hmx89hQgxhGqWHWh_vK8W0_-9agxSkTQ8w1DUXt6BzZ7oY2iZM89p7mS
+    TJJfeR4qNTWMGqTtTtmg0Caro1tRgA==""")
+
+class MagicEnvelopeProtocolTest(unittest.TestCase):
+  """Tests Magic Envelope protocol."""
 
   def setUp(self):
-    self.protocol = magicsig.MagicEnvelopeProtocol()
-    self.protocol.key_retriever = self.MockKeyRetriever()
+    self.mox = mox.Mox()
+    self.key_get = self.mox.CreateMock(magicsig.KeyRetriever)
+    self.extractor = self.mox.CreateMock(utils.DefaultAuthorExtractor)
 
-  def testInvalidEnvelopes(self):
-    self.assertRaises(magicsig.EnvelopeError, magicsig.Envelope, 'blah')
-    try:
-      magicsig.Envelope(foo=5, biff=23)
-      # Should never get here
-      self.assertTrue(None)
-    except magicsig.Error:
-      pass
-      # e = sys.exc_info()[1]
-      #print "Exception: %s" % e
-      #print "Invalid envelope: %s" % e.invalid_envelope
+    self.protocol = magicsig.MagicEnvelopeProtocol(
+        key_retriever=self.key_get,
+        author_extractor=self.extractor,
+        auto_verify=False)
+
+  def tearDown(self):
+    self.mox.VerifyAll()
 
   def testSigning(self):
-    envelope = magicsig.Envelope(
-        self.protocol,
-        raw_data_to_sign=self.test_atom,
-        signer_uri='acct:test@example.com',
-        signer_key=TEST_PRIVATE_KEY,
-        data_type='application/atom+xml',
-        encoding='base64url',
-        alg='RSA-SHA256')
+    self.extractor.ExtractAuthor(TEST_ATOM,
+                                 'application/atom+xml').AndReturn(
+      'acct:test@example.com')
+    self.key_get.LookupPrivateKey('acct:test@example.com').AndReturn(
+      TEST_PRIVATE_KEY)
+    self.mox.ReplayAll()
 
-    # Turn envelope into text:
-    xml = envelope.ToXML()
+    envelope = self.protocol.WrapAndSign(data=TEST_ATOM,
+                                         data_type='application/atom+xml')
 
-    # Now round-trip it:
-    magicsig.Envelope(
-        self.protocol,
-        mime_type='application/magic-envelope+xml',
-        document=xml)
+    self.assertEquals(TEST_ENVELOPE, envelope)
 
-    # Getting here without an exception is success.
+  def testSigningNonAtom(self):
+    self.extractor.ExtractAuthor(TEST_NON_ATOM, 'text/plain').AndReturn(
+      'acct:test@example.com')
+    self.key_get.LookupPrivateKey('acct:test@example.com').AndReturn(
+        TEST_PRIVATE_KEY)
+
+    self.extractor.ExtractAuthor(TEST_NON_ATOM, 'text/plain').AndReturn(
+      'acct:test@example.com')
+    self.key_get.LookupPublicKey('acct:test@example.com').AndReturn(
+        TEST_PUBLIC_KEY)
+    self.mox.ReplayAll()
+
+    envelope = self.protocol.WrapAndSign(
+        data=TEST_NON_ATOM,
+        data_type='text/plain')
+
+    self.assertEquals(TEST_NON_ATOM_ENVELOPE, envelope)
+
+    assert self.protocol.VerifyEnvelope(envelope)
+
+  def testVerify(self):
+    self.extractor.ExtractAuthor(TEST_ATOM,
+                                 'application/atom+xml'
+                                 ).AndReturn('acct:test@example.com')
+    self.key_get.LookupPublicKey('acct:test@example.com').AndReturn(
+      TEST_PUBLIC_KEY)
+    self.mox.ReplayAll()
+
+    self.assertTrue(self.protocol.VerifyEnvelope(TEST_ENVELOPE))
+
+  def testVerifyWithWrongPublicKey(self):
+    self.extractor.ExtractAuthor(TEST_ATOM,
+                                 'application/atom+xml'
+                                 ).AndReturn('acct:test@example.com')
+    self.key_get.LookupPublicKey('acct:test@example.com').AndReturn(
+        TEST_PUBLIC_KEY.replace('B', 'b'))
+    self.mox.ReplayAll()
+
+    self.assertFalse(self.protocol.VerifyEnvelope(TEST_ENVELOPE))
+
+  def testVerifyNoPublicKeyFound(self):
+    self.extractor.ExtractAuthor(TEST_ATOM,
+                                 'application/atom+xml'
+                                 ).AndReturn('acct:test@example.com')
+    self.key_get.LookupPublicKey('acct:test@example.com').AndReturn(None)
+    self.mox.ReplayAll()
+
+    self.assertRaises(exceptions.KeyNotFoundError,
+                      self.protocol.VerifyEnvelope,
+                      TEST_ENVELOPE)
+
+  def testTampering(self):
+    self.extractor.ExtractAuthor(TEST_ATOM,
+                                 'application/atom+xml'
+                                 ).AndReturn('acct:test@example.com')
+    self.key_get.LookupPublicKey('acct:test@example.com').AndReturn(
+        TEST_PUBLIC_KEY)
+    self.mox.ReplayAll()
+
+    envelope = copy.copy(TEST_ENVELOPE)
+    envelope.sig = envelope.sig.replace('DNgwHrN', 'ANgwHrN')
+
+    self.assertFalse(self.protocol.VerifyEnvelope(envelope))
 
   def testToAtom(self):
-    envelope = magicsig.Envelope(
-        self.protocol,
-        raw_data_to_sign=self.test_atom,
-        signer_uri='acct:test@example.com',
-        signer_key=TEST_PRIVATE_KEY,
-        data_type='application/atom+xml',
-        encoding='base64url',
-        alg='RSA-SHA256')
-
-    text = envelope.ToAtom()
+    text = self.protocol.ToAtomString(TEST_ENVELOPE)
 
     assert re.search('atom:entry',text)
     assert re.search('me:provenance',text)
     assert re.search('test@example\.com',text)
 
-  def testTampering(self):
-    envelope = magicsig.Envelope(
-        self.protocol,
-        raw_data_to_sign=self.test_atom,
-        signer_uri='acct:test@example.com',
-        signer_key=TEST_PRIVATE_KEY,
-        data_type='application/atom+xml',
-        encoding='base64url',
-        alg='RSA-SHA256')
+  def testToXml(self):
+    text = self.protocol.ToXmlString(TEST_ENVELOPE)
 
-    xml = envelope.ToXML()
+    expected = """<?xmlversion='1.0'encoding='UTF-8'?>
+    <me:envxmlns:me='http://salmon-protocol.org/ns/magic-env'>
+    <me:encoding>base64url</me:encoding>
+    <me:datatype='application/atom+xml'>PD94bWwgdmVyc2lvbj0nMS4wJyBlb
+    mNvZGluZz0nVVRGLTgnPz4KPGVudHJ5IHhtbG5zPSdodHRwOi8vd3d3LnczLm9yZy
+    8yMDA1L0F0b20nPgogIDxpZD50YWc6ZXhhbXBsZS5jb20sMjAwOTpjbXQtMC40NDc
+    3NTcxODwvaWQ-CiAgPGF1dGhvcj48bmFtZT50ZXN0QGV4YW1wbGUuY29tPC9uYW1l
+    Pjx1cmk-YWNjdDp0ZXN0QGV4YW1wbGUuY29tPC91cmk-CiAgPC9hdXRob3I-CiAgP
+    GNvbnRlbnQ-U2FsbW9uIHN3aW0gdXBzdHJlYW0hPC9jb250ZW50PgogIDx0aXRsZT
+    5TYWxtb24gc3dpbSB1cHN0cmVhbSE8L3RpdGxlPgogIDx1cGRhdGVkPjIwMDktMTI
+    tMThUMjA6MDQ6MDNaPC91cGRhdGVkPgo8L2VudHJ5Pgo=</me:data>
+    <me:alg>RSA-SHA256</me:alg>
+    <me:sig>RL3pTqRn7RAHoEKwtZCVDNgwHrNB0WJxFt8fq6l0HAGcIN4BLYzUC5hpGy
+    Ssnow2ibw3bgUVeiZMU0dPfrKBFA==</me:sig>
+    </me:env>"""
 
-    self.assertRaises(Exception,
-                      magicsig.Envelope,
-                      self.protocol,
-                      mime_type='application/magic-envelope+xml',
-                      document=re.sub('U2FsbW9', 'U2GsbW9', xml))
+    self.assertEquals(utils.Squeeze(text), utils.Squeeze(text))
+
+  def testVerifyMakesEnvelopeFresh(self):
+    self.extractor.ExtractAuthor(TEST_ATOM,
+                                 'application/atom+xml'
+                                 ).AndReturn('acct:test@example.com')
+    self.key_get.LookupPublicKey('acct:test@example.com').AndReturn(
+      TEST_PUBLIC_KEY)
+    self.mox.ReplayAll()
+
+    self.assertEquals(0, self.protocol.GetDateLastVerified(TEST_ENVELOPE))
+    self.protocol.VerifyEnvelope(TEST_ENVELOPE)
+
+    self.assertTrue(0 < self.protocol.GetDateLastVerified(TEST_ENVELOPE))
+
+
+class ProtocolEndToEndTest(unittest.TestCase):
+  """Tests Magic Envelope protocol with default handlers."""
+  # TODO: Add tests that actually call webfinger?
+  pass
+
 
 if __name__ == '__main__':
   unittest.main()

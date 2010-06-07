@@ -36,8 +36,8 @@ import Crypto.PublicKey
 import Crypto.PublicKey.RSA
 from Crypto.Util import number
 
+import exceptions
 import hashlib
-
 
 # Note that PyCrypto is a very low level library and its documentation
 # leaves something to be desired.  As a cheat sheet, for the RSA
@@ -87,6 +87,46 @@ _KEY_RE = re.compile(
         (?P<private_exp>[^\.]+)
       )?""",
     re.VERBOSE)
+
+
+class DefaultAlgorithms(object):
+  """Signs and verifies data."""
+
+  def Sign(self, signing_key, bytes_to_sign, algorithm):
+    """Signs given bytes with given algorithm.
+
+    Args:
+      signing_key: private key to sign with.
+      bytes_to_sign: bytes to sign.
+      algorithm: Signing algorithm to use.
+    Returns:
+      The signature produced by the algorithm.
+    Raises:
+      UnsupportedAlgorithmError: if algorithm != 'RSA-SHA256'
+    """
+    if algorithm != 'RSA-SHA256':
+      raise exceptions.UnsupportedAlgorithmError(
+          'Algorithm must be "RSA-SHA256", not ' + algorithm)
+
+    return SignatureAlgRsaSha256(signing_key).Sign(bytes_to_sign)
+
+  def Verify(self, public_key, signed_bytes, signature_b64, algorithm):
+    """Determines the validity of a signature over a signed buffer of bytes.
+
+    Args:
+      public_key: string public key which supposedly signed the bytes.
+      signed_bytes: string The buffer of bytes the signature_b64 covers.
+      signature_b64: string The putative signature, base64-encoded, to check.
+    Raises:
+      UnsupportedAlgorithmError: if algorithm != 'RSA-SHA256'
+    Returns:
+      True if the request validated, False otherwise.
+    """
+    if algorithm != 'RSA-SHA256':
+      raise exceptions.UnsupportedAlgorithmError(
+          'Algorithm must be "RSA-SHA256", not ' + algorithm)
+
+    return SignatureAlgRsaSha256(public_key).Verify(signed_bytes, signature_b64)
 
 
 # Implementation of the Magic Envelope signature algorithm
