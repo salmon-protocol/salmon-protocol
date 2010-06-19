@@ -110,7 +110,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
           This string is guaranteed to be safe to include without escaping as XML text
           and in JSON strings.</t><t hangText="data_type:">The <xref target="RFC2045">MIME</xref> type of the payload prior to encoding.</t><t hangText="encoding:">The encoding used to convert between the MIME type and the "data" string.
           In this specification, encoding MUST be the string "base64url", indicating the url safe base64
-          encoding as described in <xref target="RFC4648">RFC 4648</xref>, without trailing padding.  All
+          encoding as described in <xref target="RFC4648">RFC 4648</xref>.  All
           implementations MUST support this encoding.</t><t hangText="alg:">The algorithm used for the signature.  This specification describes only one 
           signature algorithm, "RSA-SHA256", which all implementations MUST support.</t>
         <t hangText="sig:">A generated signature.  This is a string in the base64url encoded format as described
@@ -394,7 +394,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
       This specification defines a new MIME type for simple RSA public key(pairs).</t>
       <section title="The application/magic-key MIME type">
         <t>The application/magic-key format is a very minimal format for representing public key data.
-        It consists of a string of ASCII text, separated into 3 or 4 components, with components separated 
+        It consists of a string of ASCII text, separated into 3 components, with components separated 
         by a "." (0x2E) character.  The first component is the key type; this specification only defines
         the "RSA" key type for future upgradeability.  Thus a magic key consists of the string 
         "RSA.modulus(n).exponent(e)"
@@ -431,7 +431,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
           potential signers to actually have a verified signature.
           Specifications which rely on this one MUST specify the semantics in
           these cases.</t>
-        <t>Example: href="data:application/magic-public-key;,RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww.AQAB"</t>
+        <t>Example: href="data:application/magic-public-key,RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww.AQAB"</t>
       </section>
     </section>
     <section anchor="Acknowledgements" title="Acknowledgements">

@@ -1,10 +1,9 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html lang="en"><head><title>Draft: Magic Signatures</title>
-<meta http-equiv="Expires" content="Tue, 20 Apr 2010 18:35:42 +0000">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <meta name="description" content="Magic Signatures">
 <meta name="keywords" content="signatures, PKI">
-<meta name="generator" content="xml2rfc v1.34 (http://xml.resource.org/)">
+<meta name="generator" content="xml2rfc v1.35 (http://xml.resource.org/)">
 <style type='text/css'><!--
         body {
                 font-family: verdana, charcoal, helvetica, arial, sans-serif;
@@ -313,7 +312,7 @@ Magic Envelope Parameters</h3>
 <dt>encoding:</dt>
 <dd>The encoding used to convert between the MIME type and the "data" string.
           In this specification, encoding MUST be the string "base64url", indicating the url safe base64
-          encoding as described in <a class='info' href='#RFC4648'>RFC 4648<span> (</span><span class='info'>Josefsson, S., &ldquo;The Base16, Base32, and Base64 Data Encodings,&rdquo; October&nbsp;2006.</span><span>)</span></a> [RFC4648], without trailing padding.  All
+          encoding as described in <a class='info' href='#RFC4648'>RFC 4648<span> (</span><span class='info'>Josefsson, S., &ldquo;The Base16, Base32, and Base64 Data Encodings,&rdquo; October&nbsp;2006.</span><span>)</span></a> [RFC4648].  All
           implementations MUST support this encoding.
 </dd>
 <dt>alg:</dt>
@@ -701,7 +700,7 @@ Simple Public Key Infrastructure</h3>
 The application/magic-key MIME type</h3>
 
 <p>The application/magic-key format is a very minimal format for representing public key data.
-        It consists of a string of ASCII text, separated into 3 or 4 components, with components separated 
+        It consists of a string of ASCII text, separated into 3 components, with components separated 
         by a "." (0x2E) character.  The first component is the key type; this specification only defines
         the "RSA" key type for future upgradeability.  Thus a magic key consists of the string 
         "RSA.modulus(n).exponent(e)"
@@ -747,7 +746,7 @@ Discovery</h3>
           Specifications which rely on this one MUST specify the semantics in
           these cases.
 </p>
-<p>Example: href="data:application/magic-public-key;,RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww.AQAB"
+<p>Example: href="data:application/magic-public-key,RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww.AQAB"
 </p>
 <a name="Acknowledgements"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>

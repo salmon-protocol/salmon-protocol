@@ -111,7 +111,7 @@ xml2rfc.tcl draft-panzer-salmon-00.xml draft-panzer-salmon-00.html -->
         semantics of the new link relation introduced by Salmon.</t>
 
       <section anchor="SLR" title="The 'salmon' Link Relation">
-        <t>The http://salmon-protocol.org/ns/salmon link relation specifies a
+        <t>The 'salmon' link relation specifies a
           Salmon endpoint used to receive salmon of interest to the entity
           controlling the associated resource.  These are typically comments,
           replies, or mentions that involve the resource.  The following
@@ -126,7 +126,7 @@ xml2rfc.tcl draft-panzer-salmon-00.xml draft-panzer-salmon-00.html -->
       </section>
 
       <section anchor="SRLR" title="Salmon Links for Replies">
-        <t>The http://salmon-protocol.org/ns/salmon link relation
+        <t>The 'salmon' link relation
           may specify a Salmon endpoint to be
           used for any replies to or commentaries about its associated resource.
           It may appear as a child of atom:entry, an atom:feed, or a HEAD
@@ -144,14 +144,13 @@ xml2rfc.tcl draft-panzer-salmon-00.xml draft-panzer-salmon-00.html -->
         <t>Example endpoint in an Atom feed: <figure><artwork><![CDATA[
 <feed xmlns='http://www.w3.org/2005/Atom'>
   ...
-  <link rel="http://salmon-protocol.org/ns/salmon"
-        href="http://example.org/all-replies-endpoint"/>
+  <link rel="salmon" href="http://example.org/all-replies-endpoint"/>
 </feed>
 ]]></artwork></figure></t>
 
       </section>
       <section anchor="SMLR" title="Salmon Links for Mentions">
-        <t>The http://salmon-protocol.org/ns/salmon link relation
+        <t>The 'salmon' link relation
           may specify a Salmon endpoint used to notify a resource,
           typically a user account, about external mentions of that
           resource.  For a user account, the salmon mention link
@@ -162,26 +161,24 @@ xml2rfc.tcl draft-panzer-salmon-00.xml draft-panzer-salmon-00.html -->
         <t>Example in a user's XRD file:  <figure><artwork><![CDATA[
 <XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0">
   <Subject>acct:bob@example.com</Subject>
-  <Link rel="http://salmon-protocol.org/ns/salmon-mention"
-    href="https://example.com/mention-handler" />
+  <Link rel="salmon" href="https://example.com/mention-handler" />
 </XRD>
 ]]></artwork></figure></t>
         <section anchor="SALR" title="The Mentioned Link Relation">
-          <t>The http://salmon-protocol.org/ns/mentioned link relation
+          <t>The 'mentioned' link relation
             specifies a user or resource mentioned in the
             salmon content.  The presence of the link indicates that the
             author of the salmon intends to bring it to the target's
             attention, implying both permission to see the content and
             a desire for the target to be notified.</t>
-          <t>Salmon generators SHOULD include a Salmon mentions link
+          <t>Salmon generators SHOULD include a mentioned link
             specifying mentioned resources when they know the user's
-            intent.  Salmon recipients SHOULD use Salmon mentions links
+            intent.  Salmon recipients SHOULD use mentioned links
             to determine where to route notifications.</t>
           <t>Example Atom entry with a mention:  <figure><artwork><![CDATA[
 <entry xmlns='http://www.w3.org/2005/Atom'>
 ...
-  <link rel="http://salmon-prototol.org/ns/salmon"
-        href="acct:user@example.com" />
+  <link rel="salmon" href="acct:user@example.com" />
   <content>Hey there @User!</content>
 </entry>
 ]]></artwork></figure></t>
@@ -311,7 +308,7 @@ Content-Type: application/magic-envelope+xml
         following standard API, protected via OAuth, to create signed Salmon on
         behalf of the user.</t>
       <section title="The 'salmon-signer' Link Relation">
-        <t>The http://salmon-protocol.org/ns/salmon-signer link relation
+        <t>The 'salmon-signer' link relation
           specifies a Salmon endpoint to be used to turn an unsigned entry into
           a signed salmon.  It is discovered
           via XRD discovery on the IdP host; that is, look for the salmon-signer

@@ -1,9 +1,8 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html lang="en"><head><title>Draft: The Salmon Protocol</title>
-<meta http-equiv="Expires" content="Tue, 20 Apr 2010 18:35:36 +0000">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <meta name="description" content="The Salmon Protocol">
-<meta name="generator" content="xml2rfc v1.34 (http://xml.resource.org/)">
+<meta name="generator" content="xml2rfc v1.35 (http://xml.resource.org/)">
 <style type='text/css'><!--
         body {
                 font-family: verdana, charcoal, helvetica, arial, sans-serif;
@@ -299,7 +298,7 @@ Salmon Discovery</h3>
 <a name="rfc.section.3.1"></a><h3>3.1.&nbsp;
 The 'salmon' Link Relation</h3>
 
-<p>The http://salmon-protocol.org/ns/salmon link relation specifies a
+<p>The 'salmon' link relation specifies a
           Salmon endpoint used to receive salmon of interest to the entity
           controlling the associated resource.  These are typically comments,
           replies, or mentions that involve the resource.  The following
@@ -318,7 +317,7 @@ The 'salmon' Link Relation</h3>
 <a name="rfc.section.3.2"></a><h3>3.2.&nbsp;
 Salmon Links for Replies</h3>
 
-<p>The http://salmon-protocol.org/ns/salmon link relation
+<p>The 'salmon' link relation
           may specify a Salmon endpoint to be
           used for any replies to or commentaries about its associated resource.
           It may appear as a child of atom:entry, an atom:feed, or a HEAD
@@ -340,8 +339,7 @@ Salmon Links for Replies</h3>
 <div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
 &lt;feed xmlns='http://www.w3.org/2005/Atom'&gt;
   ...
-  &lt;link rel="http://salmon-protocol.org/ns/salmon"
-        href="http://example.org/all-replies-endpoint"/&gt;
+  &lt;link rel="salmon" href="http://example.org/all-replies-endpoint"/&gt;
 &lt;/feed&gt;
 </pre></div><p>
 
@@ -351,7 +349,7 @@ Salmon Links for Replies</h3>
 <a name="rfc.section.3.3"></a><h3>3.3.&nbsp;
 Salmon Links for Mentions</h3>
 
-<p>The http://salmon-protocol.org/ns/salmon link relation
+<p>The 'salmon' link relation
           may specify a Salmon endpoint used to notify a resource,
           typically a user account, about external mentions of that
           resource.  For a user account, the salmon mention link
@@ -365,8 +363,7 @@ Salmon Links for Mentions</h3>
 <div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
 &lt;XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0"&gt;
   &lt;Subject&gt;acct:bob@example.com&lt;/Subject&gt;
-  &lt;Link rel="http://salmon-protocol.org/ns/salmon-mention"
-    href="https://example.com/mention-handler" /&gt;
+  &lt;Link rel="salmon" href="https://example.com/mention-handler" /&gt;
 &lt;/XRD&gt;
 </pre></div><p>
 
@@ -376,24 +373,23 @@ Salmon Links for Mentions</h3>
 <a name="rfc.section.3.3.1"></a><h3>3.3.1.&nbsp;
 The Mentioned Link Relation</h3>
 
-<p>The http://salmon-protocol.org/ns/mentioned link relation
+<p>The 'mentioned' link relation
             specifies a user or resource mentioned in the
             salmon content.  The presence of the link indicates that the
             author of the salmon intends to bring it to the target's
             attention, implying both permission to see the content and
             a desire for the target to be notified.
 </p>
-<p>Salmon generators SHOULD include a Salmon mentions link
+<p>Salmon generators SHOULD include a mentioned link
             specifying mentioned resources when they know the user's
-            intent.  Salmon recipients SHOULD use Salmon mentions links
+            intent.  Salmon recipients SHOULD use mentioned links
             to determine where to route notifications.
 </p>
 <p>Example Atom entry with a mention:  </p>
 <div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
 &lt;entry xmlns='http://www.w3.org/2005/Atom'&gt;
 ...
-  &lt;link rel="http://salmon-prototol.org/ns/salmon"
-        href="acct:user@example.com" /&gt;
+  &lt;link rel="salmon" href="acct:user@example.com" /&gt;
   &lt;content&gt;Hey there @User!&lt;/content&gt;
 &lt;/entry&gt;
 </pre></div><p>
@@ -550,7 +546,7 @@ Salmon Signing Requirements</h3>
 <a name="rfc.section.6.1"></a><h3>6.1.&nbsp;
 The 'salmon-signer' Link Relation</h3>
 
-<p>The http://salmon-protocol.org/ns/salmon-signer link relation
+<p>The 'salmon-signer' link relation
           specifies a Salmon endpoint to be used to turn an unsigned entry into
           a signed salmon.  It is discovered
           via XRD discovery on the IdP host; that is, look for the salmon-signer
