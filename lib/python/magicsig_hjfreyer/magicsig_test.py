@@ -96,11 +96,11 @@ class MagicEnvelopeProtocolTest(unittest.TestCase):
     self.mox.VerifyAll()
 
   def testSigning(self):
-    self.extractor.ExtractAuthor(TEST_ATOM,
-                                 'application/atom+xml').AndReturn(
-      'acct:test@example.com')
+    self.extractor.ExtractAuthors(TEST_ATOM,
+                                  'application/atom+xml').AndReturn(
+        ['acct:test@example.com'])
     self.key_get.LookupPrivateKey('acct:test@example.com').AndReturn(
-      TEST_PRIVATE_KEY)
+        TEST_PRIVATE_KEY)
     self.mox.ReplayAll()
 
     envelope = self.protocol.WrapAndSign(data=TEST_ATOM,
@@ -109,13 +109,13 @@ class MagicEnvelopeProtocolTest(unittest.TestCase):
     self.assertEquals(TEST_ENVELOPE, envelope)
 
   def testSigningNonAtom(self):
-    self.extractor.ExtractAuthor(TEST_NON_ATOM, 'text/plain').AndReturn(
-      'acct:test@example.com')
+    self.extractor.ExtractAuthors(TEST_NON_ATOM, 'text/plain').AndReturn(
+        ['acct:test@example.com'])
     self.key_get.LookupPrivateKey('acct:test@example.com').AndReturn(
         TEST_PRIVATE_KEY)
 
-    self.extractor.ExtractAuthor(TEST_NON_ATOM, 'text/plain').AndReturn(
-      'acct:test@example.com')
+    self.extractor.ExtractAuthors(TEST_NON_ATOM, 'text/plain').AndReturn(
+        ['acct:test@example.com'])
     self.key_get.LookupPublicKey('acct:test@example.com').AndReturn(
         TEST_PUBLIC_KEY)
     self.mox.ReplayAll()
@@ -129,19 +129,19 @@ class MagicEnvelopeProtocolTest(unittest.TestCase):
     assert self.protocol.VerifyEnvelope(envelope)
 
   def testVerify(self):
-    self.extractor.ExtractAuthor(TEST_ATOM,
-                                 'application/atom+xml'
-                                 ).AndReturn('acct:test@example.com')
+    self.extractor.ExtractAuthors(TEST_ATOM,
+                                  'application/atom+xml'
+                                  ).AndReturn(['acct:test@example.com'])
     self.key_get.LookupPublicKey('acct:test@example.com').AndReturn(
-      TEST_PUBLIC_KEY)
+        TEST_PUBLIC_KEY)
     self.mox.ReplayAll()
 
     self.assertTrue(self.protocol.VerifyEnvelope(TEST_ENVELOPE))
 
   def testVerifyWithWrongPublicKey(self):
-    self.extractor.ExtractAuthor(TEST_ATOM,
-                                 'application/atom+xml'
-                                 ).AndReturn('acct:test@example.com')
+    self.extractor.ExtractAuthors(TEST_ATOM,
+                                  'application/atom+xml'
+                                  ).AndReturn(['acct:test@example.com'])
     self.key_get.LookupPublicKey('acct:test@example.com').AndReturn(
         TEST_PUBLIC_KEY.replace('B', 'b'))
     self.mox.ReplayAll()
@@ -149,9 +149,9 @@ class MagicEnvelopeProtocolTest(unittest.TestCase):
     self.assertFalse(self.protocol.VerifyEnvelope(TEST_ENVELOPE))
 
   def testVerifyNoPublicKeyFound(self):
-    self.extractor.ExtractAuthor(TEST_ATOM,
-                                 'application/atom+xml'
-                                 ).AndReturn('acct:test@example.com')
+    self.extractor.ExtractAuthors(TEST_ATOM,
+                                  'application/atom+xml'
+                                  ).AndReturn(['acct:test@example.com'])
     self.key_get.LookupPublicKey('acct:test@example.com').AndReturn(None)
     self.mox.ReplayAll()
 
@@ -160,9 +160,9 @@ class MagicEnvelopeProtocolTest(unittest.TestCase):
                       TEST_ENVELOPE)
 
   def testTampering(self):
-    self.extractor.ExtractAuthor(TEST_ATOM,
-                                 'application/atom+xml'
-                                 ).AndReturn('acct:test@example.com')
+    self.extractor.ExtractAuthors(TEST_ATOM,
+                                  'application/atom+xml'
+                                  ).AndReturn(['acct:test@example.com'])
     self.key_get.LookupPublicKey('acct:test@example.com').AndReturn(
         TEST_PUBLIC_KEY)
     self.mox.ReplayAll()
@@ -201,9 +201,9 @@ class MagicEnvelopeProtocolTest(unittest.TestCase):
     self.assertEquals(utils.Squeeze(text), utils.Squeeze(text))
 
   def testVerifyMakesEnvelopeFresh(self):
-    self.extractor.ExtractAuthor(TEST_ATOM,
-                                 'application/atom+xml'
-                                 ).AndReturn('acct:test@example.com')
+    self.extractor.ExtractAuthors(TEST_ATOM,
+                                  'application/atom+xml'
+                                  ).AndReturn(['acct:test@example.com'])
     self.key_get.LookupPublicKey('acct:test@example.com').AndReturn(
       TEST_PUBLIC_KEY)
     self.mox.ReplayAll()

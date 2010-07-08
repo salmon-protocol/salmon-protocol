@@ -45,13 +45,13 @@ class UtilsTest(unittest.TestCase):
 
   def testExtractAuthor(self):
     # Trival case of one author:
-    a = self.extractor.ExtractAuthor(TEST_ATOM, mime_type=utils.Mimes.ATOM)
-    self.assertEquals(a, 'acct:test@example.com')
+    a = self.extractor.ExtractAuthors(TEST_ATOM, mime_type=utils.Mimes.ATOM)
+    self.assertEquals(['acct:test@example.com'], a)
 
     # Multi author case:
-    a = self.extractor.ExtractAuthor(TEST_ATOM_MULTI_AUTHOR,
-                                     mime_type=utils.Mimes.ATOM)
-    self.assertEquals(a, 'acct:alice@example.com')
+    a = self.extractor.ExtractAuthors(TEST_ATOM_MULTI_AUTHOR,
+                                      mime_type=utils.Mimes.ATOM)
+    self.assertEquals(['acct:alice@example.com', 'acct:bob@example.com'], a)
 
   def testNormalizeUserIds(self):
     id1 = 'http://example.com'
@@ -59,11 +59,11 @@ class UtilsTest(unittest.TestCase):
     id3 = 'acct:bob@example.org'
     em3 = 'bob@example.org'
 
-    self.assertEquals(utils.NormalizeUserIdToUri(id1), id1)
-    self.assertEquals(utils.NormalizeUserIdToUri(id2), id2)
-    self.assertEquals(utils.NormalizeUserIdToUri(id3), id3)
-    self.assertEquals(utils.NormalizeUserIdToUri(em3), id3)
-    self.assertEquals(utils.NormalizeUserIdToUri(' '+id1+' '), id1)
+    self.assertEquals(id1, utils.NormalizeUserIdToUri(id1))
+    self.assertEquals(id2, utils.NormalizeUserIdToUri(id2))
+    self.assertEquals(id3, utils.NormalizeUserIdToUri(id3))
+    self.assertEquals(id3, utils.NormalizeUserIdToUri(em3))
+    self.assertEquals(id1, utils.NormalizeUserIdToUri(' '+id1+' '))
 
 
 if __name__ == '__main__':

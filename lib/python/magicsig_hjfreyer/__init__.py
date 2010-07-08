@@ -102,9 +102,6 @@ class MagicEnvelopeProtocol(object):
     Args:
       data: unencoded data to wrap and sign (e.g. a json/XML string).
       data_type: MIME type of data, as a string.
-      author_uri: The uri of the signer. Only used if private_key is
-          unspecified, and if neither is specified, protocol will try to
-          figure out the author from 'data'.
       encoding: Encoding to use in envelope.
       alg: Signing algorithm to use.
 
@@ -116,10 +113,14 @@ class MagicEnvelopeProtocol(object):
           after it is constructed.
       KeyNotFoundError: If the author's public key could not be found.
     """
-    author_uri = self.author_extractor.ExtractAuthor(data, data_type)
-    if not author_uri:
+    author_uris = self.author_extractor.ExtractAuthors(data, data_type)
+    if not author_uris:
       raise exceptions.AuthorNotFoundError(
           'Author not extracted from data: ', data)
+
+    # Just uses the first author.
+    # TODO: Support multiple signers?
+    author_uri = author_uris[0]
 
     private_key = self.key_retriever.LookupPrivateKey(author_uri)
     if not private_key:
@@ -158,11 +159,15 @@ class MagicEnvelopeProtocol(object):
     """
     decoded_data = self.encoder.Decode(envelope.data, envelope.encoding)
 
-    author_uri = self.author_extractor.ExtractAuthor(
+    author_uris = self.author_extractor.ExtractAuthors(
         decoded_data, envelope.data_type)
-    if not author_uri:
+    if not author_uris:
       raise exceptions.AuthorNotFoundError(
           'Author not extracted from data: ', decoded_data)
+
+    # Just uses the first author.
+    # TODO: Support multiple signers?
+    author_uri = author_uris[0]
 
     public_key = self.key_retriever.LookupPublicKey(author_uri)
     if not public_key:

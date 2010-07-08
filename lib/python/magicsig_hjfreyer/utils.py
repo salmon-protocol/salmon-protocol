@@ -60,7 +60,7 @@ def Squeeze(s):  # Remove all whitespace
 
 
 class DefaultAuthorExtractor(object):
-  def ExtractAuthor(self, text, mime_type):
+  def ExtractAuthors(self, text, mime_type):
     if mime_type in [Mimes.ATOM]:
       xml = et.XML(text)
 
@@ -68,13 +68,13 @@ class DefaultAuthorExtractor(object):
                               + Namespaces.ATOM_NS+'uri')
 
       if auth_uris:
-        return NormalizeUserIdToUri(auth_uris[0].text)
+        return [NormalizeUserIdToUri(auth_uri.text) for auth_uri in auth_uris]
       else:
-        return None
+        return []
     elif mime_type in [Mimes.JSON]:
       raise NotImplementedError('JSON parsing not implemented')
     else:
-      return None
+      return []
 
 
 def NormalizeUserIdToUri(userid):
