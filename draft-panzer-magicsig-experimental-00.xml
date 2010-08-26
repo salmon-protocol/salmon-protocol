@@ -96,8 +96,10 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
       <t>
         <list style="hanging">
           <t hangText="Signature:">A digital signature that provably binds a message to a signer's secret key.</t>
-          <t hangText="Signer:">In this specification, an arbitrary identifier associated with a key
-              used in a signature.</t>
+          <t hangText="Signer:">In this specification, an arbitrary URI used to determine a key
+              used to sign an envelope.  This specification does not dictate how signer URIs are to
+              be determined, but in the usual case they are embedded within the signed data and
+              extracted via a data format specific algorithm.</t>
           <t hangText="Public Key Infrastructure (PKI)">A set of hardware, software, people, policies, and 
               procedures needed to create, manage, distribute, use, store, and revoke digital certificates.
               This specification uses a very simple, limited PKI.</t>
@@ -392,12 +394,12 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
     
     <section title="The HMAC-SHA256 Private Key Signature Algorithm">
       <t>This section defines a basic HMAC based private key signature algorithm.
-      Private key exchange is outside the scope of this specification and
-      may be defined in additional profiles.</t>
+      HMAC key exchange and rotation is outside the scope of this specification, but
+      may be defined in specifications referencing this one.</t>
       <section title="Calculating the HMAC-SHA256 signature string">
         <t>First, create an HMAC-SHA256 signature using the algorithm described in 
         <xref target="RFC2104">RFC 2104</xref>, using SHA-256 as the hash function H, base string
-        described in <xref target="sbs"/> as the input text, and the secret key K. 
+        described in <xref target="sbs"/> as the input text, and the shared secret key K. 
         The resulting array of bytes
         is then base64url encoded to produce the "sig" parameter.</t>
       </section>
@@ -505,7 +507,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
       and SHOULD NOT use keys for verification without revalidating the
       content as directed by the origin server.  This allows origin servers
       to trade off performance for smaller periods of vulnerability.</t>
-      <t>Unless specified otherwise by, the public key (n, e) is obtained using the 
+      <t>Unless specified otherwise, the public key (n, e) is obtained using the 
       simple public key infrastructure described by 
       <xref target="spki"/>.</t>
     </section>
@@ -532,7 +534,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
         data will be generated via tools.</t>
       </section>
       <section title="Discovery">
-        <t>This section defines how to map from a URI identifier to a set of public signing keys 
+        <t>This section defines how to map from a signer URI identifier to a set of public signing keys 
         for that identifier.  The exact mechanism for a verifier to determine the
         signer URI is outside the scope of this specification, and MUST be specified by the
         particular protocol or application of Magic Signatures.  The URI identifier MUST appear
@@ -549,9 +551,9 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
         <t>The end result of discovery will be a collection of magic keys.  Each magic key 
         has a "data" parameter, a string in application/magic-public-key format; and an optional
         "key_id" parameter, a string as defined in [TBD:REF].  If the key_id is omitted from
-        a key, it defaults to the Base64url encoding of the SHA-256 hash of the "data"
+        a key, it defaults to the Base64url encoding of the SHA-256 hash of the "value"
         parameter.  That is, when doing discovery, processors MUST assume that an omitted key_id is
-        equivalent to specifying key_id = Base64url(SHA-256(key_id)).  A signer MAY then use
+        equivalent to specifying key_id = Base64url(SHA-256(value)).  A signer MAY then use
         this value as a key_id on a signature in order to signal use of that key.</t>
         <t>There are two standard serializations
         of this collection, one for JSON and one for XML.  Both are intended to be embeddable
@@ -622,7 +624,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
     </section>
     <!-- Possibly a 'Contributors' section ... -->
     <section anchor="IANA" title="IANA Considerations">
-      <t>This specification introduces three new media types and one new URI scheme.</t>
+      <t>This specification introduces three new media types.</t>
       <t>The MIME media type for the XML serialization of a Magic Envelope is application/magic-env+xml.</t>
       <t>Type name: application</t>
       <t>Subtype name: magic-env+xml</t>

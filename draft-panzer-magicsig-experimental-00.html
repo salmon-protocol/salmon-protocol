@@ -295,8 +295,10 @@ Definitions</h3>
 <dd>A digital signature that provably binds a message to a signer's secret key.
 </dd>
 <dt>Signer:</dt>
-<dd>In this specification, an arbitrary identifier associated with a key
-              used in a signature.
+<dd>In this specification, an arbitrary URI used to determine a key
+              used to sign an envelope.  This specification does not dictate how signer URIs are to
+              be determined, but in the usual case they are embedded within the signed data and
+              extracted via a data format specific algorithm.
 </dd>
 <dt>Public Key Infrastructure (PKI)</dt>
 <dd>A set of hardware, software, people, policies, and 
@@ -700,8 +702,8 @@ Decoding</h3>
 The HMAC-SHA256 Private Key Signature Algorithm</h3>
 
 <p>This section defines a basic HMAC based private key signature algorithm.
-      Private key exchange is outside the scope of this specification and
-      may be defined in additional profiles.
+      HMAC key exchange and rotation is outside the scope of this specification, but
+      may be defined in specifications referencing this one.
 </p>
 <a name="anchor12"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
@@ -710,7 +712,7 @@ Calculating the HMAC-SHA256 signature string</h3>
 
 <p>First, create an HMAC-SHA256 signature using the algorithm described in 
         <a class='info' href='#RFC2104'>RFC 2104<span> (</span><span class='info'>Krawczyk, H., Bellare, M., and R. Canetti, &ldquo;HMAC: Keyed-Hashing for Message Authentication,&rdquo; February&nbsp;1997.</span><span>)</span></a> [RFC2104], using SHA-256 as the hash function H, base string
-        described in <a class='info' href='#sbs'>Section&nbsp;3.2<span> (</span><span class='info'>The Signature Base String</span><span>)</span></a> as the input text, and the secret key K. 
+        described in <a class='info' href='#sbs'>Section&nbsp;3.2<span> (</span><span class='info'>The Signature Base String</span><span>)</span></a> as the input text, and the shared secret key K. 
         The resulting array of bytes
         is then base64url encoded to produce the "sig" parameter.
 </p>
@@ -849,7 +851,7 @@ Verifying Messages with RSA-SHA256</h3>
       content as directed by the origin server.  This allows origin servers
       to trade off performance for smaller periods of vulnerability.
 </p>
-<p>Unless specified otherwise by, the public key (n, e) is obtained using the 
+<p>Unless specified otherwise, the public key (n, e) is obtained using the 
       simple public key infrastructure described by 
       <a class='info' href='#spki'>Section&nbsp;10<span> (</span><span class='info'>Simple Public Key Infrastructure</span><span>)</span></a>.
 </p>
@@ -890,7 +892,7 @@ The application/magic-key MIME type</h3>
 <a name="rfc.section.10.2"></a><h3>10.2.&nbsp;
 Discovery</h3>
 
-<p>This section defines how to map from a URI identifier to a set of public signing keys 
+<p>This section defines how to map from a signer URI identifier to a set of public signing keys 
         for that identifier.  The exact mechanism for a verifier to determine the
         signer URI is outside the scope of this specification, and MUST be specified by the
         particular protocol or application of Magic Signatures.  The URI identifier MUST appear
@@ -909,9 +911,9 @@ Discovery</h3>
 <p>The end result of discovery will be a collection of magic keys.  Each magic key 
         has a "data" parameter, a string in application/magic-public-key format; and an optional
         "key_id" parameter, a string as defined in [TBD:REF].  If the key_id is omitted from
-        a key, it defaults to the Base64url encoding of the SHA-256 hash of the "data"
+        a key, it defaults to the Base64url encoding of the SHA-256 hash of the "value"
         parameter.  That is, when doing discovery, processors MUST assume that an omitted key_id is
-        equivalent to specifying key_id = Base64url(SHA-256(key_id)).  A signer MAY then use
+        equivalent to specifying key_id = Base64url(SHA-256(value)).  A signer MAY then use
         this value as a key_id on a signature in order to signal use of that key.
 </p>
 <p>There are two standard serializations
@@ -1011,7 +1013,7 @@ Acknowledgements</h3>
 <a name="rfc.section.12"></a><h3>12.&nbsp;
 IANA Considerations</h3>
 
-<p>This specification introduces three new media types and one new URI scheme.
+<p>This specification introduces three new media types.
 </p>
 <p>The MIME media type for the XML serialization of a Magic Envelope is application/magic-env+xml.
 </p>
