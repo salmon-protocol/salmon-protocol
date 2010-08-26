@@ -47,7 +47,10 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
     <author fullname="Ben Laurie" initials="B.L." surname="Laurie">
       <organization>Google Inc.</organization>
     </author>
-    <date month="February" year="2010"/>
+    <author fullname="Dirk Balfanz" initials="D.B." surname="Balfanz">
+      <organization>Google Inc.</organization>
+    </author>
+    <date month="August" year="2010"/>
     <!-- Meta-data Declarations -->
     <area>General</area>
     <workgroup>Internet Engineering Task Force</workgroup>
@@ -619,7 +622,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
     </section>
     <!-- Possibly a 'Contributors' section ... -->
     <section anchor="IANA" title="IANA Considerations">
-      <t>This specification introduces three new media types.</t>
+      <t>This specification introduces three new media types and one new URI scheme.</t>
       <t>The MIME media type for the XML serialization of a Magic Envelope is application/magic-env+xml.</t>
       <t>Type name: application</t>
       <t>Subtype name: magic-env+xml</t>
