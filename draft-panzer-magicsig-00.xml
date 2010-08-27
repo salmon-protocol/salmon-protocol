@@ -381,7 +381,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
       cases, e.g., when using envelope data as provenance for enclosing data, the decoded "data" value
       must be checked against or override the enclosing data.  A secure if lossy mechanism
       is to throw away the enclosing information and replace it with the output of the decoded "data".
-      Another altnernative is to compare trees, override with signed information where there are conflicts,
+      Another alternative is to compare trees, override with signed information where there are conflicts,
       and annotate signed parts.  The correct mechanism depends on the security model required by the processor
       and is outside the scope of this specification.</t>
       <t>The public key (n, e) is obtained using the simple public key infrastructure described by 

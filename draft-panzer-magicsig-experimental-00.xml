@@ -167,7 +167,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
         </t>
       </section>
 
-      <section title="The Compact Serialization" anchor="compact">
+      <section title="The Magic Envelope Compact Serialization" anchor="compact">
         <t>The Magic Envelope Compact Serialization stores the envelope itself in a compact,
         armored form suitable for storage as a simple string.  It is guaranteed to contain no
         spaces and no URL unsafe characters, and allows for only a single signature.</t>
@@ -198,7 +198,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
         had the value "RSA-SHA256".  The "data_type" parameter SHOULD NOT be omitted as it
         provides a defense against content type masquerading attacks.</t>
       </section>
-      <section title="The XML Serialization">
+      <section title="The Magic Envelope XML Serialization">
         <t>A Magic Envelope XML Document is defined in terms of the XML Information Set, 
         serialized as XML 1.0 [W3C.REC-xml-20040204] and identified with the 
         "application/magic-envelope+xml" media type. Magic Envelope XML Documents MUST be 
@@ -217,7 +217,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
         </t><t hangText="The &lt;me:encoding&gt; element (REQUIRED):">Contains the value of the "encoding" parameter.</t><t hangText="The &lt;me:alg&gt; element (REQUIRED):">Contains the value of the "alg" parameter.</t>
         <t hangText="The &lt;me:sig&gt; element (REQUIRED):">Contains the value
           of the "sig" parameter, an ASCII string.  MAY be repeated multiple
-          times to record multiple signatures over the same text.  MUST have a key_id
+          times to record multiple signatures over the same text.  MAY have a key_id
           attribute containing the "key_id" value for the signature.</t>
       </list>
         Additional elements not defined by this specification MAY appear as children of the me:env
@@ -251,14 +251,14 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
 ]]></artwork></figure>
         </t>
       </section>
-      <section title="The JSON Serialization">
+      <section title="The Magic Envelope JSON Serialization">
         <t>Magic Envelope JSON MUST be well formed JSON as defined in <xref target="RFC4627"/>.  The parameters are serialized into
           a JSON object as a sequence of name/value pairs for the parameter names
           "data", "data_type", "encoding", and "alg".  These values are
           represented as JSON strings.
           The "sig" parameter is represented as a "sigs" name whose value is an
-          array of objects; each object has a "value" with the
-          signature string, and a "key_id" with the associated
+          array of objects; each object has a REQUIRED "value" with the
+          signature string, and MAY have a "key_id" with the associated
           "key_id" parameter.</t>
         <t>Additional name/value pairs MAY appear within the JSON object and
          processors MUST ignore elements they
@@ -488,7 +488,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
       cases, e.g., when using envelope data as provenance for enclosing data, the decoded "data" value
       must be checked against or override the enclosing data.  A secure if lossy mechanism
       is to throw away the enclosing information and replace it with the output of the decoded "data".
-      Another altnernative is to compare trees, override with signed information where there are conflicts,
+      Another alternative is to compare trees, override with signed information where there are conflicts,
       and annotate unsigned parts as insecure/unreliable.  The correct mechanism depends on the
       security model required by the processor
       and is outside the scope of this specification.</t>
@@ -578,7 +578,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
         <section title="The XRD XML Serialialization of Magic Keys">
           <t>The keys are stored as XRD Property elements within the XRD document.  The type of
           the Property element is "ns:magic_key"
-          <cref anchor="NOTE10" source="JP">This is just to drive Will Norris insane.</cref>
+          <cref anchor="NOTE10" source="JP">This URI scheme is just to drive Will Norris insane.</cref>
           .  Each one has an optional mpk:key_id
           attribute containing the key's id; the body of the Property element contains the
           application/magic-key string data.</t>

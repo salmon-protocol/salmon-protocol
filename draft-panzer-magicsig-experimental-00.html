@@ -146,7 +146,7 @@
 <tr><td class="header">&nbsp;</td><td class="header">B. Laurie</td></tr>
 <tr><td class="header">&nbsp;</td><td class="header">D. Balfanz</td></tr>
 <tr><td class="header">&nbsp;</td><td class="header">Google Inc.</td></tr>
-<tr><td class="header">&nbsp;</td><td class="header">August 26, 2010</td></tr>
+<tr><td class="header">&nbsp;</td><td class="header">August 27, 2010</td></tr>
 </table></td></tr></table>
 <h1><br />Magic Signatures [EXPERIMENTAL DRAFT]</h1>
 
@@ -177,11 +177,11 @@ Magic Envelope Parameters<br />
 &nbsp;&nbsp;&nbsp;&nbsp;<a href="#sbs">3.2.</a>&nbsp;
 The Signature Base String<br />
 &nbsp;&nbsp;&nbsp;&nbsp;<a href="#compact">3.3.</a>&nbsp;
-The Compact Serialization<br />
+The Magic Envelope Compact Serialization<br />
 &nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor4">3.4.</a>&nbsp;
-The XML Serialization<br />
+The Magic Envelope XML Serialization<br />
 &nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor5">3.5.</a>&nbsp;
-The JSON Serialization<br />
+The Magic Envelope JSON Serialization<br />
 <a href="#anchor6">4.</a>&nbsp;
 Provenance in Atom Entries<br />
 <a href="#anchor7">5.</a>&nbsp;
@@ -377,7 +377,7 @@ Magic Envelope Parameters</h3>
 The Signature Base String</h3>
 
 <p>The Signature Base String used for both RSA-SHA256 and HMAC-SHA256 is described here.
-        It is used as input to the signature algorithms, as well as to create the <a class='info' href='#compact'>Compact Serialization<span> (</span><span class='info'>The Compact Serialization</span><span>)</span></a>, below.
+        It is used as input to the signature algorithms, as well as to create the <a class='info' href='#compact'>Compact Serialization<span> (</span><span class='info'>The Magic Envelope Compact Serialization</span><span>)</span></a>, below.
 </p>
 <p>Given a Magic Envelope with "data", "data_type", "encoding", and "alg" parameters, the
         corresponding Signature Base String is produced by concatenating the following substrings
@@ -400,7 +400,7 @@ The Signature Base String</h3>
 <a name="compact"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
 <a name="rfc.section.3.3"></a><h3>3.3.&nbsp;
-The Compact Serialization</h3>
+The Magic Envelope Compact Serialization</h3>
 
 <p>The Magic Envelope Compact Serialization stores the envelope itself in a compact,
         armored form suitable for storage as a simple string.  It is guaranteed to contain no
@@ -443,7 +443,7 @@ The Compact Serialization</h3>
 <a name="anchor4"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
 <a name="rfc.section.3.4"></a><h3>3.4.&nbsp;
-The XML Serialization</h3>
+The Magic Envelope XML Serialization</h3>
 
 <p>A Magic Envelope XML Document is defined in terms of the XML Information Set, 
         serialized as XML 1.0 [W3C.REC-xml-20040204] and identified with the 
@@ -477,7 +477,7 @@ The XML Serialization</h3>
 <dt>The &lt;me:sig&gt; element (REQUIRED):</dt>
 <dd>Contains the value
           of the "sig" parameter, an ASCII string.  MAY be repeated multiple
-          times to record multiple signatures over the same text.  MUST have a key_id
+          times to record multiple signatures over the same text.  MAY have a key_id
           attribute containing the "key_id" value for the signature.
 </dd>
 </dl></blockquote><p>
@@ -518,15 +518,15 @@ The XML Serialization</h3>
 <a name="anchor5"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
 <a name="rfc.section.3.5"></a><h3>3.5.&nbsp;
-The JSON Serialization</h3>
+The Magic Envelope JSON Serialization</h3>
 
 <p>Magic Envelope JSON MUST be well formed JSON as defined in <a class='info' href='#RFC4627'>[RFC4627]<span> (</span><span class='info'>Crockford, D., &ldquo;The application/json Media Type for JavaScript Object Notation (JSON),&rdquo; July&nbsp;2006.</span><span>)</span></a>.  The parameters are serialized into
           a JSON object as a sequence of name/value pairs for the parameter names
           "data", "data_type", "encoding", and "alg".  These values are
           represented as JSON strings.
           The "sig" parameter is represented as a "sigs" name whose value is an
-          array of objects; each object has a "value" with the
-          signature string, and a "key_id" with the associated
+          array of objects; each object has a REQUIRED "value" with the
+          signature string, and MAY have a "key_id" with the associated
           "key_id" parameter.
 </p>
 <p>Additional name/value pairs MAY appear within the JSON object and
@@ -829,7 +829,7 @@ Verifying Messages with RSA-SHA256</h3>
       cases, e.g., when using envelope data as provenance for enclosing data, the decoded "data" value
       must be checked against or override the enclosing data.  A secure if lossy mechanism
       is to throw away the enclosing information and replace it with the output of the decoded "data".
-      Another altnernative is to compare trees, override with signed information where there are conflicts,
+      Another alternative is to compare trees, override with signed information where there are conflicts,
       and annotate unsigned parts as insecure/unreliable.  The correct mechanism depends on the
       security model required by the processor
       and is outside the scope of this specification.
@@ -951,7 +951,7 @@ The XRD XML Serialialization of Magic Keys</h3>
 
 <p>The keys are stored as XRD Property elements within the XRD document.  The type of
           the Property element is "ns:magic_key"
-          <a class='info' href='#comment.NOTE10'>[NOTE10]<span> (</span><span class='info'>JP: This is just to drive Will Norris insane.</span><span>)</span></a><a name='NOTE10'></a>
+          <a class='info' href='#comment.NOTE10'>[NOTE10]<span> (</span><span class='info'>JP: This URI scheme is just to drive Will Norris insane.</span><span>)</span></a><a name='NOTE10'></a>
           .  Each one has an optional mpk:key_id
           attribute containing the key's id; the body of the Property element contains the
           application/magic-key string data.
