@@ -205,7 +205,7 @@ class RiverHandler(webapp.RequestHandler):
 
   @aclRequired
   def get(self):
-    N = 500
+    N = 100
     context = dict(entries=model.getLatestPosts(N))
     if context['entries']:
       for entry in context['entries']:
@@ -276,7 +276,18 @@ class RecrawlHandler(webapp.RequestHandler):
     feed_id = self.request.get('feed_id')
 
     if feed_id:
-      bloggerproxy.crawlProxiedFeed(db.Key(feed_id))
+      feed_key = db.Key(feed_id)
+      feed = bloggerproxy.BlogProxy.get(feed_key)
+
+      now = datetime.datetime.utcnow()
+      if now - feed.last_crawled > datetime.timedelta(seconds=30):
+        # Update the time first. Even if the crawl fails, we want to
+        # throttle it.
+        feed.last_crawled = now
+        feed.put()
+        bloggerproxy.crawlProxiedFeed(feed_key)
+      else:
+        logging.info('Feed crawled recently enough. Skipping.')
     else:
       proxied = bloggerproxy.BlogProxy.all().fetch(500)
 

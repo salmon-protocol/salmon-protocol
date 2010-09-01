@@ -45,6 +45,7 @@ class BlogProxy(db.Model):
   feed_uri = db.StringProperty(indexed=True) # The blog's (original) feed URL
   pickled_tokens = db.BlobProperty()         # Auth tokens needed to do stuff
   proxy_url = db.StringProperty()            # Full url we used for original proxy setup
+  last_crawled = db.DateTimeProperty(default=datetime.datetime.fromtimestamp(0))
 
 
 def getSalmonizedFeedDataForBlogId(id):
