@@ -146,7 +146,7 @@
 <tr><td class="header">&nbsp;</td><td class="header">B. Laurie</td></tr>
 <tr><td class="header">&nbsp;</td><td class="header">D. Balfanz</td></tr>
 <tr><td class="header">&nbsp;</td><td class="header">Google Inc.</td></tr>
-<tr><td class="header">&nbsp;</td><td class="header">August 27, 2010</td></tr>
+<tr><td class="header">&nbsp;</td><td class="header">August 2010</td></tr>
 </table></td></tr></table>
 <h1><br />Magic Signatures [EXPERIMENTAL DRAFT]</h1>
 
@@ -337,7 +337,8 @@ Magic Envelope Parameters</h3>
 <dt>encoding:</dt>
 <dd>The encoding used to convert between the MIME type and the "data" string.
           In this specification, encoding MUST be the string "base64url", indicating the url safe base64
-          encoding as described in <a class='info' href='#RFC4648'>RFC 4648<span> (</span><span class='info'>Josefsson, S., &ldquo;The Base16, Base32, and Base64 Data Encodings,&rdquo; October&nbsp;2006.</span><span>)</span></a> [RFC4648].  All
+          encoding as described in <a class='info' href='#RFC4648'>RFC 4648<span> (</span><span class='info'>Josefsson, S., &ldquo;The Base16, Base32, and Base64 Data Encodings,&rdquo; October&nbsp;2006.</span><span>)</span></a> [RFC4648], with the whitespace
+          normalization rules specified in <a class='info' href='#encoding_details'>Section&nbsp;7.1<span> (</span><span class='info'>Encoding</span><span>)</span></a>.  All
           implementations MUST support this encoding.  Appears exactly once.
 </dd>
 <dt>alg:</dt>
@@ -395,6 +396,7 @@ The Signature Base String</h3>
 <li>The Base64url encoding of the "alg" parameter
 </li>
 </ol><p>
+        An omitted parameter is represented by a zero length placeholder string.
         
 </p>
 <a name="compact"></a><br /><hr />
@@ -450,6 +452,9 @@ The Magic Envelope XML Serialization</h3>
         "application/magic-envelope+xml" media type. Magic Envelope XML Documents MUST be 
         well-formed XML. This specification does not define a DTD, and thus does not require validity 
         (in the sense used by XML).
+</p>
+<p>The following XML elements are in the namespace 'http://salmon-protocol.org/ns/magic-env',
+        represented for brevity by the short prefix "me:" in the following definitions.
 </p>
 <p>When used as a standalone XML document, the root element MUST be me:env.  When incorporated
         as a subtree of another XML document, the root of the subtree MAY be either me:env or me:provenance.
@@ -625,7 +630,7 @@ Provenance in JSON Data Structures</h3>
 <a name="rfc.section.6"></a><h3>6.&nbsp;
 Standalone Magic Envelope Messages</h3>
 
-<p>The application/magic-envelope+{atom,json} data structures MAY be used standalone, as a drop-in replacement
+<p>The application/magic-envelope+{xml,json} data structures MAY be used standalone, as a drop-in replacement
       for the data that is encoded in the data element.  This would be appropriate where the recipient understands 
       the Magic Envelope specification and can automatically decode the data to recover the original format.
       For example, instead of POSTing an application/atom+xml type entry to create a new blog post, a client
@@ -804,7 +809,9 @@ Signing Messages with RSA-SHA256</h3>
     
 </p>
 <p>The signature is then encoded as in <a class='info' href='#encoding_details'>Section&nbsp;7.1<span> (</span><span class='info'>Encoding</span><span>)</span></a> and the resulting ASCII armored string
-      stored as a "sig" signature.  The associated "key_id" is the base64url
+      stored as a "sig" signature.  The associated "key_id" is the key_id associated with that
+      signing key and published per <a class='info' href='#spki'>Section&nbsp;10<span> (</span><span class='info'>Simple Public Key Infrastructure</span><span>)</span></a>.  If the signer does not maintain
+      individual key_ids, it SHOULD output the base64url
       encoded respresentation of the SHA-256 hash of public key's application/magic-key
       representation.
 </p>
@@ -823,7 +830,7 @@ Verifying Messages with RSA-SHA256</h3>
         documented in <a class='info' href='#signing'>Section&nbsp;9.1<span> (</span><span class='info'>Signing Messages with RSA-SHA256</span><span>)</span></a>,
         and S is the decoded value of a selected "sig".  (Note that this
         algorithm creates the emsa byte sequence as in <a class='info' href='#signing'>Section&nbsp;9.1<span> (</span><span class='info'>Signing Messages with RSA-SHA256</span><span>)</span></a>
-        and then performing RSA verification using (n, e), emsa, and S.)
+        and then performs RSA verification using (n, e), emsa, and S.)
 </p>
 <p>The scope of the verification covers only the contents of the Magic Envelope itself.  In some
       cases, e.g., when using envelope data as provenance for enclosing data, the decoded "data" value
@@ -853,7 +860,12 @@ Verifying Messages with RSA-SHA256</h3>
 </p>
 <p>Unless specified otherwise, the public key (n, e) is obtained using the 
       simple public key infrastructure described by 
-      <a class='info' href='#spki'>Section&nbsp;10<span> (</span><span class='info'>Simple Public Key Infrastructure</span><span>)</span></a>.
+      <a class='info' href='#spki'>Section&nbsp;10<span> (</span><span class='info'>Simple Public Key Infrastructure</span><span>)</span></a>.  Note that several candidate signing keys may be
+      retrieved, and in the worst case verifiers MUST try each one with equal key_id 
+      until at least one successfully verifies the signature.  Two key IDs are equal
+      if their individual octets are equal and they are of equal length.  A signature
+      with an empty (missing) key_id, which may have been signed by any key, MUST
+      be verified against all available keys.
 </p>
 <a name="spki"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
@@ -876,7 +888,12 @@ The application/magic-key MIME type</h3>
         It consists of a string of ASCII text, separated into 3 components, with components separated 
         by a "." (0x2E) character.  The first component is the key type; this specification only defines
         the "RSA" key type for future upgradeability.  Thus a magic key consists of the string 
-        "RSA.modulus(n).exponent(e)"
+        "RSA.modulus(n).exponent(e)"; for example:
+</p>
+<div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww.AQAB
+</pre></div><p>
+        
         The pair (n, e) is used as input to RSASSA-PKCS1-V1_5-VERIFY.
 </p>
 <p>Each of the components is first represented as an integer in network byte order (big endian) and
@@ -909,7 +926,7 @@ Discovery</h3>
         with optional key ids.
 </p>
 <p>The end result of discovery will be a collection of magic keys.  Each magic key 
-        has a "data" parameter, a string in application/magic-public-key format; and an optional
+        has a "data" parameter, a string in application/magic-key format; and an optional
         "key_id" parameter, a string as defined in [TBD:REF].  If the key_id is omitted from
         a key, it defaults to the Base64url encoding of the SHA-256 hash of the "value"
         parameter.  That is, when doing discovery, processors MUST assume that an omitted key_id is
@@ -950,19 +967,23 @@ The JSON Serialization of Magic Keys</h3>
 The XRD XML Serialialization of Magic Keys</h3>
 
 <p>The keys are stored as XRD Property elements within the XRD document.  The type of
-          the Property element is "ns:magic_key"
-          <a class='info' href='#comment.NOTE10'>[NOTE10]<span> (</span><span class='info'>JP: This URI scheme is just to drive Will Norris insane.</span><span>)</span></a><a name='NOTE10'></a>
-          .  Each one has an optional mpk:key_id
+          the Property element is "http://salmon-protocol.org/ns/magic-key" and this is also
+          the XML namespace of dependent elements and attributes.
+          Each one has an optional mk:key_id
           attribute containing the key's id; the body of the Property element contains the
           application/magic-key string data.
 </p>
 <p>Example:
 </p>
 <div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
-&lt;Property type="ns:magic_key" mpk:key_id="1"&gt;
+&lt;Property xmlns:mk="http://salmon-protocol.org/ns/magic-key"
+          type="http://salmon-protocol.org/ns/magic-key"
+          mk:key_id="1"&gt;
   RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww.AQAB
 &lt;/Property&gt;
-&lt;Property type="ns:magic_key" mpk:key_id="2"&gt;
+&lt;Property xmlns:mk="http://salmon-protocol.org/ns/magic-key"
+          type="http://salmon-protocol.org/ns/magic-key"
+          mk:key_id="2"&gt;
   RSA.wvwmdK0eeUPe2hURBTstndvmUUPb4UZTd6wvwmddSrrC89yN8k6FilGwvwmddSKE5z_jvKUEKj9f4Pj-5CmHww.AQAB
 &lt;/Property&gt;
 </pre></div><p>

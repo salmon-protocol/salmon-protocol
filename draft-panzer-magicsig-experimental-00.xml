@@ -121,7 +121,8 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
           <t hangText="data_type:">The <xref target="RFC2045">MIME</xref> type of the payload prior to encoding.  Appears exactly once.</t>
           <t hangText="encoding:">The encoding used to convert between the MIME type and the "data" string.
           In this specification, encoding MUST be the string "base64url", indicating the url safe base64
-          encoding as described in <xref target="RFC4648">RFC 4648</xref>.  All
+          encoding as described in <xref target="RFC4648">RFC 4648</xref>, with the whitespace
+          normalization rules specified in <xref target="encoding_details"/>.  All
           implementations MUST support this encoding.  Appears exactly once.</t>
           <t hangText="alg:">The algorithm used for the signature.
           This specification describes only one 
@@ -164,6 +165,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
           <t>The Base64url encoding of the "encoding" parameter</t>
           <t>The Base64url encoding of the "alg" parameter</t>
         </list>
+        An omitted parameter is represented by a zero length placeholder string.
         </t>
       </section>
 
@@ -204,6 +206,8 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
         "application/magic-envelope+xml" media type. Magic Envelope XML Documents MUST be 
         well-formed XML. This specification does not define a DTD, and thus does not require validity 
         (in the sense used by XML).</t>
+        <t>The following XML elements are in the namespace 'http://salmon-protocol.org/ns/magic-env',
+        represented for brevity by the short prefix "me:" in the following definitions.</t>
         <t>When used as a standalone XML document, the root element MUST be me:env.  When incorporated
         as a subtree of another XML document, the root of the subtree MAY be either me:env or me:provenance.
         The me:provenance form indicates that the data is intended for verification of its sibling DOM nodes; 
@@ -339,7 +343,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
       use the key name "provenance" for the object containing the Magic Envelope fields.</t>
     </section>
     <section title="Standalone Magic Envelope Messages">
-      <t>The application/magic-envelope+{atom,json} data structures MAY be used standalone, as a drop-in replacement
+      <t>The application/magic-envelope+{xml,json} data structures MAY be used standalone, as a drop-in replacement
       for the data that is encoded in the data element.  This would be appropriate where the recipient understands 
       the Magic Envelope specification and can automatically decode the data to recover the original format.
       For example, instead of POSTing an application/atom+xml type entry to create a new blog post, a client
@@ -469,7 +473,9 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
       </list>
     </t>
     <t>The signature is then encoded as in <xref target="encoding_details"/> and the resulting ASCII armored string
-      stored as a "sig" signature.  The associated "key_id" is the base64url
+      stored as a "sig" signature.  The associated "key_id" is the key_id associated with that
+      signing key and published per <xref target="spki"/>.  If the signer does not maintain
+      individual key_ids, it SHOULD output the base64url
       encoded respresentation of the SHA-256 hash of public key's application/magic-key
       representation.</t>
     </section>
@@ -483,7 +489,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
         documented in <xref target="signing"/>,
         and S is the decoded value of a selected "sig".  (Note that this
         algorithm creates the emsa byte sequence as in <xref target="signing"/>
-        and then performing RSA verification using (n, e), emsa, and S.)</t>
+        and then performs RSA verification using (n, e), emsa, and S.)</t>
       <t>The scope of the verification covers only the contents of the Magic Envelope itself.  In some
       cases, e.g., when using envelope data as provenance for enclosing data, the decoded "data" value
       must be checked against or override the enclosing data.  A secure if lossy mechanism
@@ -509,7 +515,12 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
       to trade off performance for smaller periods of vulnerability.</t>
       <t>Unless specified otherwise, the public key (n, e) is obtained using the 
       simple public key infrastructure described by 
-      <xref target="spki"/>.</t>
+      <xref target="spki"/>.  Note that several candidate signing keys may be
+      retrieved, and in the worst case verifiers MUST try each one with equal key_id 
+      until at least one successfully verifies the signature.  Two key IDs are equal
+      if their individual octets are equal and they are of equal length.  A signature
+      with an empty (missing) key_id, which may have been signed by any key, MUST
+      be verified against all available keys.</t>
     </section>
     </section>
     <section title="Simple Public Key Infrastructure" anchor="spki">
@@ -524,7 +535,10 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
         It consists of a string of ASCII text, separated into 3 components, with components separated 
         by a "." (0x2E) character.  The first component is the key type; this specification only defines
         the "RSA" key type for future upgradeability.  Thus a magic key consists of the string 
-        "RSA.modulus(n).exponent(e)"
+        "RSA.modulus(n).exponent(e)"; for example:
+<figure><artwork><![CDATA[
+RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww.AQAB
+]]></artwork></figure>        
         The pair (n, e) is used as input to RSASSA-PKCS1-V1_5-VERIFY.</t>
         <t>Each of the components is first represented as an integer in network byte order (big endian) and
         encoded via the "base64url" mechanism described in <xref target="params"/>.
@@ -549,7 +563,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
         How to take a general URI and securely map it to a set of public signing keys
         with optional key ids.</t>
         <t>The end result of discovery will be a collection of magic keys.  Each magic key 
-        has a "data" parameter, a string in application/magic-public-key format; and an optional
+        has a "data" parameter, a string in application/magic-key format; and an optional
         "key_id" parameter, a string as defined in [TBD:REF].  If the key_id is omitted from
         a key, it defaults to the Base64url encoding of the SHA-256 hash of the "value"
         parameter.  That is, when doing discovery, processors MUST assume that an omitted key_id is
@@ -577,17 +591,21 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
         </section>
         <section title="The XRD XML Serialialization of Magic Keys">
           <t>The keys are stored as XRD Property elements within the XRD document.  The type of
-          the Property element is "ns:magic_key"
-          <cref anchor="NOTE10" source="JP">This URI scheme is just to drive Will Norris insane.</cref>
-          .  Each one has an optional mpk:key_id
+          the Property element is "http://salmon-protocol.org/ns/magic-key" and this is also
+          the XML namespace of dependent elements and attributes.
+          Each one has an optional mk:key_id
           attribute containing the key's id; the body of the Property element contains the
           application/magic-key string data.</t>
           <t>Example:
 <figure><artwork><![CDATA[
-<Property type="ns:magic_key" mpk:key_id="1">
+<Property xmlns:mk="http://salmon-protocol.org/ns/magic-key" 
+          type="http://salmon-protocol.org/ns/magic-key" 
+          mk:key_id="1">
   RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww.AQAB
 </Property>
-<Property type="ns:magic_key" mpk:key_id="2">
+<Property xmlns:mk="http://salmon-protocol.org/ns/magic-key"
+          type="http://salmon-protocol.org/ns/magic-key"
+          mk:key_id="2">
   RSA.wvwmdK0eeUPe2hURBTstndvmUUPb4UZTd6wvwmddSrrC89yN8k6FilGwvwmddSKE5z_jvKUEKj9f4Pj-5CmHww.AQAB
 </Property>
 ]]></artwork></figure>          
