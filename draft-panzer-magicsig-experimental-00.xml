@@ -682,8 +682,7 @@ RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1u3rrC9yN8k6FilGj9K0eeUPe2hf
         of trusted root CAs.  Leveraging DNSSEC, when available, to reduce the CA attack
         surface is RECOMMENDED.</t>
         <t>Magic Signatures leaves other security issues
-        for relying specifications.  In particular it does not
-        attempt to address confidentiality, non-repudiation, or replay attacks.</t>
+        for relying specifications.</t>
       </list>
       </t>
     </section>
