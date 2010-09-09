@@ -649,8 +649,8 @@ Syndicating Magic Envelope Messages</h3>
 <p>Feed processors who understand Magic Signatures SHOULD treat me:env elements which verify correctly
         as if the underlying Atom entry had been sent.  The semantics of me:env elements whose signatures cannot
         be verified are undefined by this specification; processors MAY ignore them, produce an error, attach a
-        warning, or perform other actions as required by their security model.
-        <a class='info' href='#comment.TODO5'>[TODO5]<span> (</span><span class='info'>JP: Talk about security models somewhere; clearly delineate where this spec leaves off and referencing specs need to provide a model.</span><span>)</span></a><a name='TODO5'></a>
+        warning, or perform other actions as required by their security model.  Specifications referencing this
+        one SHOULD specify specific security models appropriate to their respective domains.
         
 </p>
 <a name="encoding"></a><br /><hr />
@@ -790,7 +790,7 @@ Signing Messages with RSA-SHA256</h3>
 <li>Let hash = the SHA256 hash digest of M
 </li>
 <li>Let prefix = the constant byte sequence
-          <a class='info' href='#comment.NOTE1'>[NOTE1]<span> (</span><span class='info'>JP: The octets are Elvish, of an ancient mode, but the language is that of ASN.1, which I will not utter here. But this in the Common Tongue is what is said, close enough:</span><span>)</span></a><a name='NOTE1'></a>
+          
             [0x30, 0x31,
             0x30, 0xd, 0x6,
             0x9, 0x60, 0x86, 0x48, 0x1, 0x65, 0x3, 0x4, 0x2, 0x1, 0x5, 0x0, 0x4,
@@ -1027,7 +1027,9 @@ Key Selection</h3>
 <a name="rfc.section.11"></a><h3>11.&nbsp;
 Acknowledgements</h3>
 
-<p>TODO.
+<p>This document is the outcome of meetings and feedback from a large number of people.
+      In particular, feedback from the Webfinger, OAuth, and Salmon Protocol communities has 
+      been invaluable.
 </p>
 <a name="IANA"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
@@ -1072,8 +1074,22 @@ IANA Considerations</h3>
 <a name="rfc.section.13"></a><h3>13.&nbsp;
 Security Considerations</h3>
 
-<p>TODO.
-      See <a class='info' href='#RFC3552'>RFC 3552<span> (</span><span class='info'>Rescorla, E. and B. Korver, &ldquo;Guidelines for Writing RFC Text on Security Considerations,&rdquo; July&nbsp;2003.</span><span>)</span></a> [RFC3552] for a guide.
+<p>Specific security considerations are embedded in the relevant functional sections above.
+      However, it is useful to note of the considerations listed in
+      <a class='info' href='#RFC3552'>[RFC3552]<span> (</span><span class='info'>Rescorla, E. and B. Korver, &ldquo;Guidelines for Writing RFC Text on Security Considerations,&rdquo; July&nbsp;2003.</span><span>)</span></a>, Magic Signatures addresses Data Integrity and
+      Data Origin authentication in particular.  However, it leaves dealing with specific threat
+      models to specifications referencing this one.
+      Note that Magic Signatures relies on the existence of a reliable domain name service and TLS
+      for bootstrapping domain-level discovery information, and is dependent on the proper
+      implementation of TLS
+      on both client and server, including operational security of web servers, avoiding the use 
+      of insecure HTTP redirects, honoring
+      certification revocations, and maintaining an appropriate set of trusted root CAs.  Leveraging
+      DNSSEC, when available, to reduce the CA attack surface is RECOMMENDED.
+      Magic Signatures leaves other security issues
+      for referencing specifications.  In particular it does not
+      attempt to address confidentiality, non-repudiation, or replay attacks.
+      
 </p>
 <a name="rfc.references"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>

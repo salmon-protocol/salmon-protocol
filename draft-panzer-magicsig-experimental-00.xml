@@ -21,8 +21,8 @@
 <!-- Turn into html via:
 xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
 <!-- To remove before final draft: Display internal comments/TODOs, inline -->
-<?rfc comments="yes"?>
-<?rfc inline="yes"?>
+<?rfc comments="no"?>
+<?rfc inline="no"?>
 <!-- end of list of popular I-D processing instructions -->
 <rfc category="info" docName="draft-panzer-magicsig-00" >
   <!-- ***** FRONT MATTER ***** -->
@@ -356,9 +356,8 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
         <t>Feed processors who understand Magic Signatures SHOULD treat me:env elements which verify correctly
         as if the underlying Atom entry had been sent.  The semantics of me:env elements whose signatures cannot
         be verified are undefined by this specification; processors MAY ignore them, produce an error, attach a
-        warning, or perform other actions as required by their security model.
-        <cref anchor="TODO5" source="JP">Talk about security models somewhere; clearly delineate where this spec leaves
-        off and referencing specs need to provide a model.</cref>
+        warning, or perform other actions as required by their security model.  Specifications referencing this
+        one SHOULD specify specific security models appropriate to their respective domains.
         </t>
       </section>
     </section>
@@ -638,7 +637,9 @@ RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1u3rrC9yN8k6FilGj9K0eeUPe2hf
       </section>
     </section>
     <section anchor="Acknowledgements" title="Acknowledgements">
-      <t>TODO.</t>
+      <t>This document is the outcome of meetings and feedback from a large number of people.
+      In particular, feedback from the Webfinger, OAuth, and Salmon Protocol communities has 
+      been invaluable.</t>
     </section>
     <!-- Possibly a 'Contributors' section ... -->
     <section anchor="IANA" title="IANA Considerations">
@@ -661,8 +662,22 @@ RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1u3rrC9yN8k6FilGj9K0eeUPe2hf
       <t>Optional parameters: n/a</t>
     </section>
     <section anchor="Security" title="Security Considerations">
-      <t>TODO.
-      See <xref target="RFC3552">RFC 3552</xref> for a guide.</t>
+      <t>Specific security considerations are embedded in the relevant functional sections above.
+      However, it is useful to note of the considerations listed in
+      <xref target="RFC3552"/>, Magic Signatures addresses Data Integrity and
+      Data Origin authentication in particular.  However, it leaves dealing with specific threat
+      models to specifications referencing this one.
+      Note that Magic Signatures relies on the existence of a reliable domain name service and TLS
+      for bootstrapping domain-level discovery information, and is dependent on the proper
+      implementation of TLS
+      on both client and server, including operational security of web servers, avoiding the use 
+      of insecure HTTP redirects, honoring
+      certification revocations, and maintaining an appropriate set of trusted root CAs.  Leveraging
+      DNSSEC, when available, to reduce the CA attack surface is RECOMMENDED.
+      Magic Signatures leaves other security issues
+      for referencing specifications.  In particular it does not
+      attempt to address confidentiality, non-repudiation, or replay attacks.
+      </t>
     </section>
 
   </middle>
