@@ -208,8 +208,8 @@ The RSA-SHA256 Public Key Signature Algorithm<br />
 Signing Messages with RSA-SHA256<br />
 &nbsp;&nbsp;&nbsp;&nbsp;<a href="#verifying">9.2.</a>&nbsp;
 Verifying Messages with RSA-SHA256<br />
-<a href="#spki">10.</a>&nbsp;
-Simple Public Key Infrastructure<br />
+<a href="#mpki">10.</a>&nbsp;
+Magic Public Key Infrastructure<br />
 &nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor15">10.1.</a>&nbsp;
 The application/magic-key MIME type<br />
 &nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor16">10.2.</a>&nbsp;
@@ -345,7 +345,7 @@ Magic Envelope Parameters</h3>
 <dd>The algorithm used for the signature.
           This specification describes only one 
           public key signature algorithm, "RSA-SHA256", and one private key signature algorithm,
-          "HMAC-SHA256".  Specifications using Magic Signatures MUST specify which of these MUST
+          "HMAC-SHA256".  Specifications relying on Magic Signatures MUST specify which of these MUST
           be supported for a particular protocol.  Implementations of general Magic Signatures
           SHOULD support both for maximum interoperability.  Appears exactly once.
 </dd>
@@ -649,7 +649,7 @@ Syndicating Magic Envelope Messages</h3>
 <p>Feed processors who understand Magic Signatures SHOULD treat me:env elements which verify correctly
         as if the underlying Atom entry had been sent.  The semantics of me:env elements whose signatures cannot
         be verified are undefined by this specification; processors MAY ignore them, produce an error, attach a
-        warning, or perform other actions as required by their security model.  Specifications referencing this
+        warning, or perform other actions as required by their security model.  Specifications relying on this
         one SHOULD specify specific security models appropriate to their respective domains.
         
 </p>
@@ -708,7 +708,7 @@ The HMAC-SHA256 Private Key Signature Algorithm</h3>
 
 <p>This section defines a basic HMAC based private key signature algorithm.
       HMAC key exchange and rotation is outside the scope of this specification, but
-      may be defined in specifications referencing this one.
+      may be defined in specifications relying on this one.
 </p>
 <a name="anchor12"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
@@ -738,8 +738,8 @@ The RSA-SHA256 Public Key Signature Algorithm</h3>
 
 <p>This section defines the default public key signature algorithm for Magic Signatures.
       In addition to indicating the signing algorithm, use of RSA-SHA256 by default also implies
-      use of the Simple Public Key Infrastructure <a class='info' href='#spki'>Section&nbsp;10<span> (</span><span class='info'>Simple Public Key Infrastructure</span><span>)</span></a> to obtain public keys.
-      Specifications using Magic Signatures MAY specify other mechanisms for key retrieval.
+      use of the Magic Public Key Infrastructure <a class='info' href='#mpki'>Section&nbsp;10<span> (</span><span class='info'>Magic Public Key Infrastructure</span><span>)</span></a> to obtain public keys.
+      Specifications relying on Magic Signatures MAY specify other mechanisms for key retrieval.
 </p>
 <a name="signing"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
@@ -810,7 +810,7 @@ Signing Messages with RSA-SHA256</h3>
 </p>
 <p>The signature is then encoded as in <a class='info' href='#encoding_details'>Section&nbsp;7.1<span> (</span><span class='info'>Encoding</span><span>)</span></a> and the resulting ASCII armored string
       stored as a "sig" signature.  The associated "key_id" is the key_id associated with that
-      signing key and published per <a class='info' href='#spki'>Section&nbsp;10<span> (</span><span class='info'>Simple Public Key Infrastructure</span><span>)</span></a>.  If the signer does not maintain
+      signing key and published per <a class='info' href='#mpki'>Section&nbsp;10<span> (</span><span class='info'>Magic Public Key Infrastructure</span><span>)</span></a>.  If the signer does not maintain
       individual key_ids, it SHOULD output the base64url
       encoded respresentation of the SHA-256 hash of public key's application/magic-key
       representation.
@@ -860,17 +860,17 @@ Verifying Messages with RSA-SHA256</h3>
 </p>
 <p>Unless specified otherwise, the public key (n, e) is obtained using the 
       simple public key infrastructure described by 
-      <a class='info' href='#spki'>Section&nbsp;10<span> (</span><span class='info'>Simple Public Key Infrastructure</span><span>)</span></a>.  Note that several candidate signing keys may be
+      <a class='info' href='#mpki'>Section&nbsp;10<span> (</span><span class='info'>Magic Public Key Infrastructure</span><span>)</span></a>.  Note that several candidate signing keys may be
       retrieved, and in the worst case verifiers MUST try each one with equal key_id 
       until at least one successfully verifies the signature.  Two key IDs are equal
       if their individual octets are equal and they are of equal length.  A signature
       with an empty (missing) key_id, which may have been signed by any key, MUST
       be verified against all available keys.
 </p>
-<a name="spki"></a><br /><hr />
+<a name="mpki"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
 <a name="rfc.section.10"></a><h3>10.&nbsp;
-Simple Public Key Infrastructure</h3>
+Magic Public Key Infrastructure</h3>
 
 <p>This section defines a public key infrastructure based on URIs.  It uses LRDD discovery
       plus direct retrieval via secure URLs. 
@@ -1075,20 +1075,33 @@ IANA Considerations</h3>
 Security Considerations</h3>
 
 <p>Specific security considerations are embedded in the relevant functional sections above.
-      However, it is useful to note of the considerations listed in
-      <a class='info' href='#RFC3552'>[RFC3552]<span> (</span><span class='info'>Rescorla, E. and B. Korver, &ldquo;Guidelines for Writing RFC Text on Security Considerations,&rdquo; July&nbsp;2003.</span><span>)</span></a>, Magic Signatures addresses Data Integrity and
-      Data Origin authentication in particular.  However, it leaves dealing with specific threat
-      models to specifications referencing this one.
-      Note that Magic Signatures relies on the existence of a reliable domain name service and TLS
-      for bootstrapping domain-level discovery information, and is dependent on the proper
-      implementation of TLS
-      on both client and server, including operational security of web servers, avoiding the use 
-      of insecure HTTP redirects, honoring
-      certification revocations, and maintaining an appropriate set of trusted root CAs.  Leveraging
-      DNSSEC, when available, to reduce the CA attack surface is RECOMMENDED.
-      Magic Signatures leaves other security issues
-      for referencing specifications.  In particular it does not
-      attempt to address confidentiality, non-repudiation, or replay attacks.
+      In general, with reference to
+      <a class='info' href='#RFC3552'>[RFC3552]<span> (</span><span class='info'>Rescorla, E. and B. Korver, &ldquo;Guidelines for Writing RFC Text on Security Considerations,&rdquo; July&nbsp;2003.</span><span>)</span></a>, Magic Signatures is a message oriented security protocol
+      that provides object level data integrity and data origin (sender) authentication.
+      It leaves other security considerations, and specific
+      threat models, to relying specifications.  In particular, note that:
+      </p>
+<ol class="text">
+<li>Core Magic Signatures
+        does not address confidentiality, non-repudiation, or replay attacks.
+</li>
+<li>Magic Signatures defines only a basic set of key validity checks.  A key which passes these
+        checks may still be invalid for other reasons (e.g., if it has been revoked by some
+        mechanism outside the scope of this specification).  Specifications relying on Magic Signatures
+        SHOULD specify additional validity checks as appropriate.
+</li>
+<li>Magic Signatures relies on the existence of a reliable domain name service and TLS
+        for bootstrapping domain-level discovery information, and is dependent on the proper
+        end-to-end implementation of TLS, including operational security of web servers, avoiding
+        non-TLS redirects, honoring certificate revocation lists, and maintaining an appropriate set 
+        of trusted root CAs.  Leveraging DNSSEC, when available, to reduce the CA attack
+        surface is RECOMMENDED.
+</li>
+<li>Magic Signatures leaves other security issues
+        for relying specifications.  In particular it does not
+        attempt to address confidentiality, non-repudiation, or replay attacks.
+</li>
+</ol><p>
       
 </p>
 <a name="rfc.references"></a><br /><hr />

@@ -127,7 +127,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
           <t hangText="alg:">The algorithm used for the signature.
           This specification describes only one 
           public key signature algorithm, "RSA-SHA256", and one private key signature algorithm,
-          "HMAC-SHA256".  Specifications using Magic Signatures MUST specify which of these MUST
+          "HMAC-SHA256".  Specifications relying on Magic Signatures MUST specify which of these MUST
           be supported for a particular protocol.  Implementations of general Magic Signatures
           SHOULD support both for maximum interoperability.  Appears exactly once.</t>
         <t hangText="sig:">A generated signature.  This is a string in the base64url encoded format as described
@@ -356,7 +356,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
         <t>Feed processors who understand Magic Signatures SHOULD treat me:env elements which verify correctly
         as if the underlying Atom entry had been sent.  The semantics of me:env elements whose signatures cannot
         be verified are undefined by this specification; processors MAY ignore them, produce an error, attach a
-        warning, or perform other actions as required by their security model.  Specifications referencing this
+        warning, or perform other actions as required by their security model.  Specifications relying on this
         one SHOULD specify specific security models appropriate to their respective domains.
         </t>
       </section>
@@ -398,7 +398,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
     <section title="The HMAC-SHA256 Private Key Signature Algorithm">
       <t>This section defines a basic HMAC based private key signature algorithm.
       HMAC key exchange and rotation is outside the scope of this specification, but
-      may be defined in specifications referencing this one.</t>
+      may be defined in specifications relying on this one.</t>
       <section title="Calculating the HMAC-SHA256 signature string">
         <t>First, create an HMAC-SHA256 signature using the algorithm described in 
         <xref target="RFC2104">RFC 2104</xref>, using SHA-256 as the hash function H, base string
@@ -418,8 +418,8 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
     
       <t>This section defines the default public key signature algorithm for Magic Signatures.
       In addition to indicating the signing algorithm, use of RSA-SHA256 by default also implies
-      use of the Simple Public Key Infrastructure <xref target="spki"/> to obtain public keys.
-      Specifications using Magic Signatures MAY specify other mechanisms for key retrieval.</t>
+      use of the Magic Public Key Infrastructure <xref target="mpki"/> to obtain public keys.
+      Specifications relying on Magic Signatures MAY specify other mechanisms for key retrieval.</t>
       
     <section title="Signing Messages with RSA-SHA256" anchor="signing">
       <t>Signing a message consists of signing the contents of "data", 
@@ -473,7 +473,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
     </t>
     <t>The signature is then encoded as in <xref target="encoding_details"/> and the resulting ASCII armored string
       stored as a "sig" signature.  The associated "key_id" is the key_id associated with that
-      signing key and published per <xref target="spki"/>.  If the signer does not maintain
+      signing key and published per <xref target="mpki"/>.  If the signer does not maintain
       individual key_ids, it SHOULD output the base64url
       encoded respresentation of the SHA-256 hash of public key's application/magic-key
       representation.</t>
@@ -514,7 +514,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
       to trade off performance for smaller periods of vulnerability.</t>
       <t>Unless specified otherwise, the public key (n, e) is obtained using the 
       simple public key infrastructure described by 
-      <xref target="spki"/>.  Note that several candidate signing keys may be
+      <xref target="mpki"/>.  Note that several candidate signing keys may be
       retrieved, and in the worst case verifiers MUST try each one with equal key_id 
       until at least one successfully verifies the signature.  Two key IDs are equal
       if their individual octets are equal and they are of equal length.  A signature
@@ -522,7 +522,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
       be verified against all available keys.</t>
     </section>
     </section>
-    <section title="Simple Public Key Infrastructure" anchor="spki">
+    <section title="Magic Public Key Infrastructure" anchor="mpki">
       <t>This section defines a public key infrastructure based on URIs.  It uses LRDD discovery
       plus direct retrieval via secure URLs. 
       Specifically, given a signer URI such as "acct:bob@example.com" or "http://example.com/bob",
@@ -663,20 +663,28 @@ RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1u3rrC9yN8k6FilGj9K0eeUPe2hf
     </section>
     <section anchor="Security" title="Security Considerations">
       <t>Specific security considerations are embedded in the relevant functional sections above.
-      However, it is useful to note of the considerations listed in
-      <xref target="RFC3552"/>, Magic Signatures addresses Data Integrity and
-      Data Origin authentication in particular.  However, it leaves dealing with specific threat
-      models to specifications referencing this one.
-      Note that Magic Signatures relies on the existence of a reliable domain name service and TLS
-      for bootstrapping domain-level discovery information, and is dependent on the proper
-      implementation of TLS
-      on both client and server, including operational security of web servers, avoiding the use 
-      of insecure HTTP redirects, honoring
-      certification revocations, and maintaining an appropriate set of trusted root CAs.  Leveraging
-      DNSSEC, when available, to reduce the CA attack surface is RECOMMENDED.
-      Magic Signatures leaves other security issues
-      for referencing specifications.  In particular it does not
-      attempt to address confidentiality, non-repudiation, or replay attacks.
+      In general, with reference to
+      <xref target="RFC3552"/>, Magic Signatures is a message oriented security protocol
+      that provides object level data integrity and data origin (sender) authentication.
+      It leaves other security considerations, and specific
+      threat models, to relying specifications.  In particular, note that:
+      <list style="numbers">
+        <t>Core Magic Signatures
+        does not address confidentiality, non-repudiation, or replay attacks.</t>
+        <t>Magic Signatures defines only a basic set of key validity checks.  A key which passes these
+        checks may still be invalid for other reasons (e.g., if it has been revoked by some
+        mechanism outside the scope of this specification).  Specifications relying on Magic Signatures
+        SHOULD specify additional validity checks as appropriate.</t>
+        <t>Magic Signatures relies on the existence of a reliable domain name service and TLS
+        for bootstrapping domain-level discovery information, and is dependent on the proper
+        end-to-end implementation of TLS, including operational security of web servers, avoiding
+        non-TLS redirects, honoring certificate revocation lists, and maintaining an appropriate set 
+        of trusted root CAs.  Leveraging DNSSEC, when available, to reduce the CA attack
+        surface is RECOMMENDED.</t>
+        <t>Magic Signatures leaves other security issues
+        for relying specifications.  In particular it does not
+        attempt to address confidentiality, non-repudiation, or replay attacks.</t>
+      </list>
       </t>
     </section>
 
