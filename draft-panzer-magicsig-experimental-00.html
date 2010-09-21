@@ -252,26 +252,30 @@ Introduction</h3>
          recipients to reliably map from URIs for signers to their public keys.  It also allows for
          private key signatures, but leaves private key exchange mechanisms unspecified.
 </p>
-<p>This mechanism is an alternative to XML-DSig.  In the field, XML-DSig has proven to be problematic
-         in applications such as syndication of feeds.  Compared to XML-DSig, Magic Signatures offers 
-         the following features:
+<p>This mechanism is an alternative to XML Signature <a class='info' href='#XMLDSIG'>[XMLDSIG]<span> (</span><span class='info'>, &ldquo;XML Signature Syntax and Processing (Second Edition),&rdquo; .</span><span>)</span></a>.
+         Compared to XML Signature, Magic Signatures offers 
+         the following trade-offs:
          </p>
 <ol class="text">
-<li>Can handle any data format; not tied to XML.
+<li>Handles all payload data formats uniformly.
+</li>
+<li>Does not require use of an XML processor for non-XML payloads.
 </li>
 <li>Does not require any canonicalization beyond removal of whitespace, so it is much easier
               to verify messages correctly.
 </li>
 <li>Can survive message disassembly, storage into arbitrary systems, and 
-              re-constitution without invalidating the signature.
+              re-constitution without invalidating the signature (but it is not possible to sign
+              only part of a message).
 </li>
 <li>Significantly smaller and simpler specification.
 </li>
 </ol><p>
-         Magic Signatures does not attempt to address every XML-DSig use case, so it is best
+         Magic Signatures does not attempt to address every XML Signature use case, so it is best
          described as a lightweight, robust, and minimal form of digital signatures that can be used
-         and deployed where XML-DSig cannot be relied on.  Note that for XML, it is possible to combine both 
-         mechanisms.
+         and deployed where XML Signatures has proven problematic in the field, for example
+         feed syndication (see <a class='info' href='#RFC4287'>[RFC4287]<span> (</span><span class='info'>Nottingham, M., Ed. and R. Sayre, Ed., &ldquo;The Atom Syndication Format,&rdquo; December&nbsp;2005.</span><span>)</span></a> section 5.1).  Note that it is possible to combine both 
+         signature mechanisms if desired.
       
 </p>
 <a name="anchor2"></a><br /><hr />
@@ -314,7 +318,7 @@ Definitions</h3>
 Magic Envelope Definition</h3>
 
 <p>A "Magic Envelope" comprises a message bundled along with signature(s) for that message, expressed
-      as a series of parameters, and serialized as either XML or JSON.  The envelope specifies the data
+      as a series of parameters, and serialized as a compact string, JSON, or XML.  The envelope specifies the data
       to be signed, the MIME type of the data, the transfer encoding, and the signature.
 </p>
 <a name="params"></a><br /><hr />
@@ -487,7 +491,7 @@ The Magic Envelope XML Serialization</h3>
 </dd>
 </dl></blockquote><p>
         Additional elements not defined by this specification MAY appear as children of the me:env
-        or me:provenance elements.  Processors MUST ignore
+        me:provenance, or me:sig elements.  Processors MUST ignore
         elements they do not understand.
 </p>
 <p>Example:      
@@ -812,7 +816,7 @@ Signing Messages with RSA-SHA256</h3>
       stored as a "sig" signature.  The associated "key_id" is the key_id associated with that
       signing key and published per <a class='info' href='#mpki'>Section&nbsp;10<span> (</span><span class='info'>Magic Public Key Infrastructure</span><span>)</span></a>.  If the signer does not maintain
       individual key_ids, it SHOULD output the base64url
-      encoded respresentation of the SHA-256 hash of public key's application/magic-key
+      encoded representation of the SHA-256 hash of public key's application/magic-key
       representation.
 </p>
 <a name="verifying"></a><br /><hr />
@@ -900,7 +904,7 @@ RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1u3rrC9yN8k6FilGj9K0eeUPe2hf
         encoded via the "base64url" mechanism described in <a class='info' href='#params'>Section&nbsp;3.1<span> (</span><span class='info'>Magic Envelope Parameters</span><span>)</span></a>.
         
 </p>
-<p>This specificaion defines only a public key format, and anticipates that keypairs may be stored
+<p>This specification defines only a public key format, and anticipates that keypairs may be stored
         securely in other formats (e.g., DER encoded X.509 certificates) and that the application/magic-key
         data will be generated via tools.
 </p>
@@ -1083,7 +1087,8 @@ Security Considerations</h3>
       </p>
 <ol class="text">
 <li>Core Magic Signatures
-        does not address confidentiality, non-repudiation, or replay attacks.
+        addresses neither confidentiality nor replay attacks.  Relying specifications SHOULD address
+        these issues as appropriate, e.g., by ensuring that messages are idempotent.
 </li>
 <li>Magic Signatures defines only a basic set of key validity checks.  A key which passes these
         checks may still be invalid for other reasons (e.g., if it has been revoked by some
@@ -1124,10 +1129,14 @@ References</h3>
 <td class="author-text">Jonsson, J. and B. Kaliski, &ldquo;<a href="http://tools.ietf.org/html/rfc3447">Public-Key Cryptography Standards (PKCS) #1: RSA Cryptography Specifications Version 2.1</a>,&rdquo; RFC&nbsp;3447, February&nbsp;2003 (<a href="http://www.rfc-editor.org/rfc/rfc3447.txt">TXT</a>).</td></tr>
 <tr><td class="author-text" valign="top"><a name="RFC3552">[RFC3552]</a></td>
 <td class="author-text">Rescorla, E. and B. Korver, &ldquo;<a href="http://tools.ietf.org/html/rfc3552">Guidelines for Writing RFC Text on Security Considerations</a>,&rdquo; BCP&nbsp;72, RFC&nbsp;3552, July&nbsp;2003 (<a href="http://www.rfc-editor.org/rfc/rfc3552.txt">TXT</a>).</td></tr>
+<tr><td class="author-text" valign="top"><a name="RFC4287">[RFC4287]</a></td>
+<td class="author-text"><a href="mailto:mnot@pobox.com">Nottingham, M., Ed.</a> and <a href="mailto:rfsayre@boswijck.com">R. Sayre, Ed.</a>, &ldquo;<a href="http://tools.ietf.org/html/rfc4287">The Atom Syndication Format</a>,&rdquo; RFC&nbsp;4287, December&nbsp;2005 (<a href="http://www.rfc-editor.org/rfc/rfc4287.txt">TXT</a>, <a href="http://xml.resource.org/public/rfc/html/rfc4287.html">HTML</a>, <a href="http://xml.resource.org/public/rfc/xml/rfc4287.xml">XML</a>).</td></tr>
 <tr><td class="author-text" valign="top"><a name="RFC4627">[RFC4627]</a></td>
 <td class="author-text">Crockford, D., &ldquo;<a href="http://tools.ietf.org/html/rfc4627">The application/json Media Type for JavaScript Object Notation (JSON)</a>,&rdquo; RFC&nbsp;4627, July&nbsp;2006 (<a href="http://www.rfc-editor.org/rfc/rfc4627.txt">TXT</a>).</td></tr>
 <tr><td class="author-text" valign="top"><a name="RFC4648">[RFC4648]</a></td>
 <td class="author-text">Josefsson, S., &ldquo;<a href="http://tools.ietf.org/html/rfc4648">The Base16, Base32, and Base64 Data Encodings</a>,&rdquo; RFC&nbsp;4648, October&nbsp;2006 (<a href="http://www.rfc-editor.org/rfc/rfc4648.txt">TXT</a>).</td></tr>
+<tr><td class="author-text" valign="top"><a name="XMLDSIG">[XMLDSIG]</a></td>
+<td class="author-text">&ldquo;<a href="http://www.w3.org/TR/xmldsig-core">XML Signature Syntax and Processing (Second Edition)</a>.&rdquo;</td></tr>
 <tr><td class="author-text" valign="top"><a name="XRD">[XRD]</a></td>
 <td class="author-text">Eran, EHL. and WN. Will, &ldquo;<a href="http://tools.oasis-open.org/version-control/browse/wsvn/xri/xrd/1.0/drafts/wd13/xrd-1.0-wd13.html">Extensible Resource Descriptor (XRD) Version 1.0, Working Draft 13</a>.&rdquo;</td></tr>
 </table>

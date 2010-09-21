@@ -7,6 +7,7 @@
 <!ENTITY RFC2045 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.2045.xml">
 <!ENTITY RFC4627 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.4627.xml">
 <!ENTITY RFC2104 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.2104.xml">
+<!ENTITY RFC4287 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.4287.xml">
 <!ENTITY I-D.narten-iana-considerations-rfc2434bis SYSTEM "http://xml.resource.org/public/rfc/bibxml3/reference.I-D.narten-iana-considerations-rfc2434bis.xml">
 ]>
 <?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
@@ -75,16 +76,23 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
          In order to make this mechanism useful, it also defines a public key discovery protocol that enables 
          recipients to reliably map from URIs for signers to their public keys.  It also allows for
          private key signatures, but leaves private key exchange mechanisms unspecified.</t>
-      <t>This mechanism is an alternative to XML-DSig.  In the field, XML-DSig has proven to be problematic
-         in applications such as syndication of feeds.  Compared to XML-DSig, Magic Signatures offers 
-         the following features:
-         <list style="numbers"><t>Can handle any data format; not tied to XML.</t><t>Does not require any canonicalization beyond removal of whitespace, so it is much easier
-              to verify messages correctly.</t><t>Can survive message disassembly, storage into arbitrary systems, and 
-              re-constitution without invalidating the signature.</t><t>Significantly smaller and simpler specification.</t></list>
-         Magic Signatures does not attempt to address every XML-DSig use case, so it is best
+      <t>This mechanism is an alternative to XML Signature <xref target="XMLDSIG"/>.
+         Compared to XML Signature, Magic Signatures offers 
+         the following trade-offs:
+         <list style="numbers">
+           <t>Handles all payload data formats uniformly.</t>
+           <t>Does not require use of an XML processor for non-XML payloads.</t>
+           <t>Does not require any canonicalization beyond removal of whitespace, so it is much easier
+              to verify messages correctly.</t>
+           <t>Can survive message disassembly, storage into arbitrary systems, and 
+              re-constitution without invalidating the signature (but it is not possible to sign
+              only part of a message).</t>
+           <t>Significantly smaller and simpler specification.</t></list>
+         Magic Signatures does not attempt to address every XML Signature use case, so it is best
          described as a lightweight, robust, and minimal form of digital signatures that can be used
-         and deployed where XML-DSig cannot be relied on.  Note that for XML, it is possible to combine both 
-         mechanisms.
+         and deployed where XML Signatures has proven problematic in the field, for example
+         feed syndication (see <xref target="RFC4287"/> section 5.1).  Note that it is possible to combine both 
+         signature mechanisms if desired.
       </t>
       <section title="Requirements Language">
         <t>The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
@@ -110,7 +118,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
     <?rfc needLines="8" ?>
     <section title="Magic Envelope Definition">
       <t>A "Magic Envelope" comprises a message bundled along with signature(s) for that message, expressed
-      as a series of parameters, and serialized as either XML or JSON.  The envelope specifies the data
+      as a series of parameters, and serialized as a compact string, JSON, or XML.  The envelope specifies the data
       to be signed, the MIME type of the data, the transfer encoding, and the signature.</t>
       <section title="Magic Envelope Parameters" anchor="params">
         <t>
@@ -225,7 +233,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
           attribute containing the "key_id" value for the signature.</t>
       </list>
         Additional elements not defined by this specification MAY appear as children of the me:env
-        or me:provenance elements.  Processors MUST ignore
+        me:provenance, or me:sig elements.  Processors MUST ignore
         elements they do not understand.</t>
         <t>Example:      
           <figure><artwork><![CDATA[
@@ -475,7 +483,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
       stored as a "sig" signature.  The associated "key_id" is the key_id associated with that
       signing key and published per <xref target="mpki"/>.  If the signer does not maintain
       individual key_ids, it SHOULD output the base64url
-      encoded respresentation of the SHA-256 hash of public key's application/magic-key
+      encoded representation of the SHA-256 hash of public key's application/magic-key
       representation.</t>
     </section>
     <section title="Verifying Messages with RSA-SHA256" anchor="verifying">
@@ -542,7 +550,7 @@ RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1u3rrC9yN8k6FilGj9K0eeUPe2hf
         <t>Each of the components is first represented as an integer in network byte order (big endian) and
         encoded via the "base64url" mechanism described in <xref target="params"/>.
         </t>
-        <t>This specificaion defines only a public key format, and anticipates that keypairs may be stored
+        <t>This specification defines only a public key format, and anticipates that keypairs may be stored
         securely in other formats (e.g., DER encoded X.509 certificates) and that the application/magic-key
         data will be generated via tools.</t>
       </section>
@@ -670,7 +678,8 @@ RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1u3rrC9yN8k6FilGj9K0eeUPe2hf
       threat models, to relying specifications.  In particular, note that:
       <list style="numbers">
         <t>Core Magic Signatures
-        does not address confidentiality, non-repudiation, or replay attacks.</t>
+        addresses neither confidentiality nor replay attacks.  Relying specifications SHOULD address
+        these issues as appropriate, e.g., by ensuring that messages are idempotent.</t>
         <t>Magic Signatures defines only a basic set of key validity checks.  A key which passes these
         checks may still be invalid for other reasons (e.g., if it has been revoked by some
         mechanism outside the scope of this specification).  Specifications relying on Magic Signatures
@@ -715,6 +724,8 @@ RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1u3rrC9yN8k6FilGj9K0eeUPe2hf
       &RFC4627;
       
       &RFC2104;
+      
+      &RFC4287;
      
       <reference anchor="LRDD"
         target="http://tools.ietf.org/html/draft-hammer-discovery-04">
@@ -722,6 +733,12 @@ RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1u3rrC9yN8k6FilGj9K0eeUPe2hf
           <author initials="E" surname="Eran" fullname="Hammer-Lahav">
             <organization/>
           </author>
+        </front>
+      </reference>
+      
+      <reference anchor="XMLDSIG"
+        target="http://www.w3.org/TR/xmldsig-core">
+        <front><title>XML Signature Syntax and Processing (Second Edition)</title>
         </front>
       </reference>
 
