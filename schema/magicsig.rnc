@@ -1,5 +1,4 @@
 default namespace me = "http://salmon-protocol.org/ns/magic-env"
-datatypes xs = "http://www.w3.org/2001/XMLSchema-datatypes"
 
 start = env
 
