@@ -36,7 +36,7 @@ def log(s):
 
 if __name__ == '__main__':
   data = _test_token
-  data_type = 'application/oauthtoken'
+  data_type = 'application/oauth-token+json'
   encoding = 'base64url'
   alg = 'RSA-SHA256'
   key_id = ''
