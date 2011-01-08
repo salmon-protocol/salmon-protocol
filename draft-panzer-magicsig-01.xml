@@ -51,7 +51,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
     <author fullname="Dirk Balfanz" initials="D.B." surname="Balfanz">
       <organization>Google Inc.</organization>
     </author>
-    <date month="August" year="2010"/>
+    <date month="January" year="2011"/>
     <!-- Meta-data Declarations -->
     <area>General</area>
     <workgroup>Internet Engineering Task Force</workgroup>

@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<html lang="en"><head><title>Draft: Magic Signatures</title>
+<html lang="en"><head><title>Draft: Magic Signatures [OBSOLETE DRAFT]</title>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<meta name="description" content="Magic Signatures">
+<meta name="description" content="Magic Signatures [OBSOLETE DRAFT]">
 <meta name="keywords" content="signatures, PKI">
 <meta name="generator" content="xml2rfc v1.35 (http://xml.resource.org/)">
 <style type='text/css'><!--
@@ -147,10 +147,13 @@
 <tr><td class="header">&nbsp;</td><td class="header">Google Inc.</td></tr>
 <tr><td class="header">&nbsp;</td><td class="header">February 2010</td></tr>
 </table></td></tr></table>
-<h1><br />Magic Signatures</h1>
+<h1><br />Magic Signatures [OBSOLETE DRAFT]</h1>
 
 <h3>Abstract</h3>
 
+<p>NOTE: This -00 draft has been superseded by draft-panzer-magicsig-01.  Please remove
+      references to this draft, other than historical ones.
+</p>
 <p>This document defines a lightweight, robust mechanism for digitally signing nearly 
          arbitrary messages,
          along with a basic public key infrastructure for discovering the signing keys.
@@ -677,7 +680,7 @@ Verifying Messages</h3>
       cases, e.g., when using envelope data as provenance for enclosing data, the decoded "data" value
       must be checked against or override the enclosing data.  A secure if lossy mechanism
       is to throw away the enclosing information and replace it with the output of the decoded "data".
-      Another altnernative is to compare trees, override with signed information where there are conflicts,
+      Another alternative is to compare trees, override with signed information where there are conflicts,
       and annotate signed parts.  The correct mechanism depends on the security model required by the processor
       and is outside the scope of this specification.
 </p>

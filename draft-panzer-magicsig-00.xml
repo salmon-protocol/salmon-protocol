@@ -26,7 +26,7 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
 <rfc category="info" docName="draft-panzer-magicsig-00" >
   <!-- ***** FRONT MATTER ***** -->
   <front>
-    <title abbrev="Magic Signatures">Magic Signatures</title>
+    <title abbrev="Magic Signatures">Magic Signatures [OBSOLETE DRAFT]</title>
     <author fullname="John Panzer" initials="J.P." role="editor" surname="Panzer">
       <organization>Google Inc.</organization>
       <address>
@@ -53,6 +53,8 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
     <keyword>signatures</keyword>
     <keyword>PKI</keyword>
     <abstract>
+      <t>NOTE: This -00 draft has been superseded by draft-panzer-magicsig-01.  Please remove
+      references to this draft, other than historical ones.</t>
       <t>This document defines a lightweight, robust mechanism for digitally signing nearly 
          arbitrary messages,
          along with a basic public key infrastructure for discovering the signing keys.</t>
