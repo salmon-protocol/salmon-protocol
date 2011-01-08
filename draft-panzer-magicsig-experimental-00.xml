@@ -547,7 +547,8 @@ xml2rfc.tcl draft-panzer-magicsig-00.xml draft-panzer-magicsig-00.html -->
 RSA.mVgY8RN6URBTstndvmUUPb4UZTdwvwmddSKE5z_jvKUEK6yk1u3rrC9yN8k6FilGj9K0eeUPe2hf4Pj-5CmHww.AQAB
 ]]></artwork></figure>        
         The pair (n, e) is used as input to RSASSA-PKCS1-V1_5-VERIFY.</t>
-        <t>Each of the components is first represented as an integer in network byte order (big endian) and
+        <t>Each of the components is first represented as an integer in network byte order (big endian),
+        with no leading zero bytes, and
         encoded via the "base64url" mechanism described in <xref target="params"/>.
         </t>
         <t>This specification defines only a public key format, and anticipates that keypairs may be stored
