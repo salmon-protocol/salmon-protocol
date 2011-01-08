@@ -187,25 +187,31 @@ Reply Endpoint Semantics<br />
 Salmon Signing Requirements<br />
 &nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor3">6.1.</a>&nbsp;
 The 'salmon-signer' Link Relation<br />
-<a href="#SVR">7.</a>&nbsp;
+<a href="#PROV">7.</a>&nbsp;
+Salmon Provenance and Syndication<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor4">7.1.</a>&nbsp;
+Provenance in Atom Entries<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor5">7.2.</a>&nbsp;
+Provenance in JSON Data Structures<br />
+<a href="#SVR">8.</a>&nbsp;
 Salmon Verification Requirements<br />
-<a href="#SIDD">8.</a>&nbsp;
+<a href="#SIDD">9.</a>&nbsp;
 Salmon Identification and De-Duplication<br />
-<a href="#SRRR">9.</a>&nbsp;
+<a href="#SRRR">10.</a>&nbsp;
 Salmon Reply Republishing Requirements<br />
-<a href="#UX">10.</a>&nbsp;
+<a href="#UX">11.</a>&nbsp;
 User Experience and Privacy<br />
-<a href="#AS">11.</a>&nbsp;
+<a href="#AS">12.</a>&nbsp;
 Activity Streams<br />
-<a href="#Acknowledgements">12.</a>&nbsp;
+<a href="#Acknowledgements">13.</a>&nbsp;
 Acknowledgements<br />
-<a href="#IANA">13.</a>&nbsp;
+<a href="#IANA">14.</a>&nbsp;
 IANA Considerations<br />
-<a href="#Security">14.</a>&nbsp;
+<a href="#Security">15.</a>&nbsp;
 Security Considerations<br />
-<a href="#rfc.references1">15.</a>&nbsp;
+<a href="#rfc.references1">16.</a>&nbsp;
 Normative References<br />
-<a href="#anchor5">Appendix&nbsp;A.</a>&nbsp;
+<a href="#anchor7">Appendix&nbsp;A.</a>&nbsp;
 Specification Feedback<br />
 <a href="#rfc.authors">&#167;</a>&nbsp;
 Author's Address<br />
@@ -329,7 +335,7 @@ Salmon Links for Replies</h3>
 </p>
 <p>Salmon generators MAY choose to send content that is a reply to the
           appropriate salmon replies endpoint.  Generators SHOULD only do this
-          with user consent (see <a class='info' href='#UX'>Section&nbsp;10<span> (</span><span class='info'>User Experience and Privacy</span><span>)</span></a>).
+          with user consent (see <a class='info' href='#UX'>Section&nbsp;11<span> (</span><span class='info'>User Experience and Privacy</span><span>)</span></a>).
 </p>
 <p>For an Atom feed, any salmon sent to the salmon replies endpoint MUST
           have a thr:in-reply-to element set to an entry covered by the
@@ -389,7 +395,7 @@ The Mentioned Link Relation</h3>
 <div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
 &lt;entry xmlns='http://www.w3.org/2005/Atom'&gt;
 ...
-  &lt;link rel="salmon" href="acct:user@example.com" /&gt;
+  &lt;link rel="mentioned" href="acct:user@example.com" /&gt;
   &lt;content&gt;Hey there @User!&lt;/content&gt;
 &lt;/entry&gt;
 </pre></div><p>
@@ -425,7 +431,7 @@ Replies Protocol Flow</h3>
         Atom Threading Extension <a class='info' href='#RFC4685'>[RFC4685]<span> (</span><span class='info'>Snell, J., &ldquo;Atom Threading Extensions,&rdquo; September&nbsp;2006.</span><span>)</span></a>.
         The generator creates a signed, enveloped salmon from the comment using
         the Magic Signatures specification
-        <a class='info' href='#MagicSig'>[MagicSig]<span> (</span><span class='info'>Panzer, J. and B. Laurie, &ldquo;Magic Signatures,&rdquo; .</span><span>)</span></a>.  The generator then POSTs the resulting
+        <a class='info' href='#MagicSig'>[MagicSig]<span> (</span><span class='info'>Panzer, J., Laurie, B., and D. Balfanz, &ldquo;Magic Signatures,&rdquo; .</span><span>)</span></a>.  The generator then POSTs the resulting
         envelope
         to the salmon endpoint for the parent entry.
 </p>
@@ -482,14 +488,6 @@ Content-Type: application/magic-envelope+xml
       include the atom:source element to identify the 'home' feed of the salmon,
       per <a class='info' href='#RFC4287'>[RFC4287]<span> (</span><span class='info'>Nottingham, M., Ed. and R. Sayre, Ed., &ldquo;The Atom Syndication Format,&rdquo; December&nbsp;2005.</span><span>)</span></a>.
 </p>
-<p>[TODO: Describe how this works with two legged OAuth as well; OAuth is
-     optional in
-     general though Salmon endpoints can require it or rate-limit or treat different
-     levels of auth'd generators differently.  In general OAuth provides for the
-     ability to identify the generator and if missing, or if using something
-     like the Google anonymous OAuth consumer, can be considered to be
-     sent from an unverified salmon generator.]
-</p>
 <a name="RES"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
 <a name="rfc.section.5"></a><h3>5.&nbsp;
@@ -513,9 +511,9 @@ Reply Endpoint Semantics</h3>
 </p>
 <p>If the salmon endpoint does re-publish the salmon
         in the parent's comment feed, it MUST conform to additional requirements
-        in <a class='info' href='#SRRR'>Section&nbsp;9<span> (</span><span class='info'>Salmon Reply Republishing Requirements</span><span>)</span></a> in order to
+        in <a class='info' href='#SRRR'>Section&nbsp;10<span> (</span><span class='info'>Salmon Reply Republishing Requirements</span><span>)</span></a> in order to
         support the end-to-end Salmon protocol.  A salmon generator MAY
-        use the mechanisms described in <a class='info' href='#SRRR'>Section&nbsp;9<span> (</span><span class='info'>Salmon Reply Republishing Requirements</span><span>)</span></a> in
+        use the mechanisms described in <a class='info' href='#SRRR'>Section&nbsp;10<span> (</span><span class='info'>Salmon Reply Republishing Requirements</span><span>)</span></a> in
         order to subscribe to the consolidated feed of all replies, if
         available.
 </p>
@@ -525,7 +523,7 @@ Reply Endpoint Semantics</h3>
 Salmon Signing Requirements</h3>
 
 <p>Salmon generators sign salmon using the mechanism described in
-        <a class='info' href='#MagicSig'>[MagicSig]<span> (</span><span class='info'>Panzer, J. and B. Laurie, &ldquo;Magic Signatures,&rdquo; .</span><span>)</span></a>.  In the most common case, the Salmon
+        <a class='info' href='#MagicSig'>[MagicSig]<span> (</span><span class='info'>Panzer, J., Laurie, B., and D. Balfanz, &ldquo;Magic Signatures,&rdquo; .</span><span>)</span></a>.  In the most common case, the Salmon
         generator is also the identity provider for the author URI.  The Salmon
         generator MAY maintain keypairs on behalf of its users or use additional
         mechanisms to allow users to maintain their own private keys (while
@@ -586,9 +584,81 @@ The 'salmon-signer' Link Relation</h3>
 </ol><p>
         
 </p>
-<a name="SVR"></a><br /><hr />
+<a name="PROV"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
 <a name="rfc.section.7"></a><h3>7.&nbsp;
+Salmon Provenance and Syndication</h3>
+
+<p>In some cases Salmon signatures must augment existing formats, e.g., Atom entries.  For
+      this reason, Salmon adds the me:provenance element to the magic-env namespace, and defines
+      its semantics as an extension of the me:env element.  A magic envelope can thus be added
+      within existing XML construct, providing a verified copy of the sibling DOM nodes.
+      When a processor sees an me:provenance element, it SHOULD override all sibling information
+      with the verified information from within the envelope.  Using the unverified information
+      for any important purpose other than to determine putative delivery destination represents
+      a security risk and SHOULD be avoided whenever possible.
+</p>
+<a name="anchor4"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.7.1"></a><h3>7.1.&nbsp;
+Provenance in Atom Entries</h3>
+
+<p>In order to syndicate verified information via existing feed mechanisms, it is useful
+      to augment standard Atom Entry construct.  In this case
+      the Magic Envelope elements are contained within an "me:provenance" root element to signal
+      this purpose.
+</p>
+<p>Example:
+        </p>
+<div style='display: table; width: 0; margin-left: 3em; margin-right: auto'><pre>
+
+&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;entry xmlns="http://www.w3.org/2005/Atom"&gt;
+  &lt;id&gt;tag:example.com,2009:3897938434&lt;/id&gt;
+  &lt;author&gt;&lt;name&gt;E. Xample&lt;/name&gt;&lt;uri&gt;acct:test@example.com&lt;/uri&gt;&lt;/author&gt;
+  &lt;content&gt;Verify this content via me:provenance.&lt;/content&gt;
+  &lt;title&gt;A verifiable entry.&lt;/title&gt;
+  &lt;updated&gt;2009-12-18T20:04:03Z&lt;/updated&gt;
+  &lt;me:provenance xmlns:me="http://salmon-protocol.org/ns/magic-env"&gt;
+    &lt;me:data type='application/atom+xml'&gt;
+    PD94bWwgdmVyc2lvbj0nMS4wJyBlbmNvZGluZz0nVVRGLTgnPz4KPGVudHJ5IHhtbG5zPS
+    dodHRwOi8vd3d3LnczLm9yZy8yMDA1L0F0b20nPgogIDxpZD50YWc6ZXhhbXBsZS5jb20s
+    MjAwOTpjbXQtMC40NDc3NTcxODwvaWQ-ICAKICA8YXV0aG9yPjxuYW1lPnRlc3RAZXhhbX
+    BsZS5jb208L25hbWUPHVyaT5hY2N0OmpwYW56ZXJAZ29vZ2xlLmNvbTwvdXJpPjwvYXV0a
+    G9yPgogIDx0aHI6aW4tcmVwbHktdG8geG1sbnM6dGhyPSdodHRwOi8vcHVybC5vcmcvc3l
+    uZGljYXRpb24vdGhyZWFkLzEuMCcKICAgICAgcmVmPSd0YWc6YmxvZ2dlci5jb20sMTk5O
+    TpibG9nLTg5MzU5MTM3NDMxMzMxMjczNy5wb3N0LTM4NjE2NjMyNTg1Mzg4NTc5NTQnPnR
+    hZzpibG9nZ2VyLmNvbSwxOTk5OmJsb2ctODkzNTkxMzc0MzEzMzEyNzM3LnBvc3QtMzg2M
+    TY2MzI1ODUzODg1Nzk1NAogIDwvdGhyOmluLXJlcGx5LXRvPgogIDxjb250ZW50PlNhbG1
+    vbiBzd2ltIHVwc3RyZWFtITwvY29udGVudD4KICA8dGl0bGUU2FsbW9uIHN3aW0gdXBzdH
+    JlYW0hPC90aXRsZT4KICA8dXBkYXRlZD4yMDA5LTEyLTE4VDIwOjA0OjAzWjwvdXBkYXRl
+    ZD4KPC9lbnRyeT4KICAgIA
+    &lt;/me:data&gt;
+    &lt;me:encoding&gt;base64url&lt;/me:encoding&gt;
+    &lt;me:alg&gt;RSA-SHA256&lt;/me:alg&gt;
+    &lt;me:sig&gt;
+    EvGSD2vi8qYcveHnb-rrlok07qnCXjn8YSeCDDXlbhILSabgvNsPpbe76up8w63i2f
+    WHvLKJzeGLKfyHg8ZomQ
+    &lt;/me:sig&gt;
+  &lt;/me:provenance&gt;
+&lt;/entry&gt;
+</pre></div><p>
+
+      
+</p>
+<a name="anchor5"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.7.2"></a><h3>7.2.&nbsp;
+Provenance in JSON Data Structures</h3>
+
+<p>A Magic Envelope JSON data structure may be embedded within any JSON structure.  When this is done
+      to verify the provenance of associated data by augmenting an existing object, the object SHOULD
+      use the key name "provenance" for the object containing the Magic Envelope fields, with the
+      semantics as described above.
+</p>
+<a name="SVR"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.8"></a><h3>8.&nbsp;
 Salmon Verification Requirements</h3>
 
 <p>This section describes the steps used to verify a salmon once
@@ -605,7 +675,7 @@ Salmon Verification Requirements</h3>
             point and return a 202 Accepted response.  This allows the
             server to perform the subsequent steps asynchronously.
 </li>
-<li>REQUIRED: Verify the magic signature using <a class='info' href='#MagicSig'>[MagicSig]<span> (</span><span class='info'>Panzer, J. and B. Laurie, &ldquo;Magic Signatures,&rdquo; .</span><span>)</span></a>.  If this verification fails, the
+<li>REQUIRED: Verify the magic signature using <a class='info' href='#MagicSig'>[MagicSig]<span> (</span><span class='info'>Panzer, J., Laurie, B., and D. Balfanz, &ldquo;Magic Signatures,&rdquo; .</span><span>)</span></a>.  If this verification fails, the
             salmon SHOULD NOT be publicly
             re-published.  Error code (if provided): 400 Bad Request.  The server
             MAY provide a human readable string in the response body.
@@ -635,7 +705,7 @@ Salmon Verification Requirements</h3>
 </li>
 <li>REQUIRED: Perform de-duplication of salmon to
             allow for updates and prevent content loops; see
-            <a class='info' href='#SIDD'>Section&nbsp;8<span> (</span><span class='info'>Salmon Identification and De-Duplication</span><span>)</span></a>.
+            <a class='info' href='#SIDD'>Section&nbsp;9<span> (</span><span class='info'>Salmon Identification and De-Duplication</span><span>)</span></a>.
             If the server cannot determine a guid using these
             mechanisms it fails this step. Error code (if provided):
             400 Bad Request.
@@ -645,7 +715,7 @@ Salmon Verification Requirements</h3>
 </p>
 <a name="SIDD"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
-<a name="rfc.section.8"></a><h3>8.&nbsp;
+<a name="rfc.section.9"></a><h3>9.&nbsp;
 Salmon Identification and De-Duplication</h3>
 
 <p>Salmon uses the Atom entry id mechanism to help filter out duplicates.
@@ -657,7 +727,7 @@ Salmon Identification and De-Duplication</h3>
         as an override when the primary
         mechanism is not available. The rest of this section refers to the
         globally universally unique ID determined by this process as the entry's
-        guid.  [TODO: Example needed here.]
+        guid.
 </p>
 <p>Security note:  When dealing with any entry which includes
         me:provenance, processors MUST determine the guid from the
@@ -667,7 +737,7 @@ Salmon Identification and De-Duplication</h3>
 <p>The steps for determining the guid for an entry are:
         </p>
 <ol class="text">
-<li>If the entry contains me:provenance, verify its signature per <a class='info' href='#MagicSig'>[MagicSig]<span> (</span><span class='info'>Panzer, J. and B. Laurie, &ldquo;Magic Signatures,&rdquo; .</span><span>)</span></a> and decode and parse the enveloped entry.  Use
+<li>If the entry contains me:provenance, verify its signature per <a class='info' href='#MagicSig'>[MagicSig]<span> (</span><span class='info'>Panzer, J., Laurie, B., and D. Balfanz, &ldquo;Magic Signatures,&rdquo; .</span><span>)</span></a> and decode and parse the enveloped entry.  Use
             the resulting entry for subsequent steps in this algorithm.
 </li>
 <li>If the entry contains a crosspost:source with an atom:id child, use
@@ -723,7 +793,7 @@ Salmon Identification and De-Duplication</h3>
 </p>
 <a name="SRRR"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
-<a name="rfc.section.9"></a><h3>9.&nbsp;
+<a name="rfc.section.10"></a><h3>10.&nbsp;
 Salmon Reply Republishing Requirements</h3>
 
 <p>The goal of these requirements is to allow Salmon endpoints,
@@ -742,9 +812,9 @@ Salmon Reply Republishing Requirements</h3>
         in other feeds.
 </p>
 <p>Services MUST NOT re-syndicate reply salmon which fail the verification
-        process (<a class='info' href='#SVR'>Section&nbsp;7<span> (</span><span class='info'>Salmon Verification Requirements</span><span>)</span></a>).
+        process (<a class='info' href='#SVR'>Section&nbsp;8<span> (</span><span class='info'>Salmon Verification Requirements</span><span>)</span></a>).
 </p>
-<p>Services MUST maintain the me:provenance element <a class='info' href='#MagicSig'>[MagicSig]<span> (</span><span class='info'>Panzer, J. and B. Laurie, &ldquo;Magic Signatures,&rdquo; .</span><span>)</span></a>
+<p>Services MUST maintain the me:provenance element <a class='info' href='#MagicSig'>[MagicSig]<span> (</span><span class='info'>Panzer, J., Laurie, B., and D. Balfanz, &ldquo;Magic Signatures,&rdquo; .</span><span>)</span></a>
         originally sent by the salmon generator in the re-syndicated entry.
         This is used to re-verify the salmon as needed by downstream third
         parties, to ensure correct de-duplication, and in particular is
@@ -760,7 +830,7 @@ Salmon Reply Republishing Requirements</h3>
 </p>
 <a name="UX"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
-<a name="rfc.section.10"></a><h3>10.&nbsp;
+<a name="rfc.section.11"></a><h3>11.&nbsp;
 User Experience and Privacy</h3>
 
 <p>Users SHOULD be made aware of and give effective consent to the
@@ -773,54 +843,86 @@ User Experience and Privacy</h3>
 </p>
 <a name="AS"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
-<a name="rfc.section.11"></a><h3>11.&nbsp;
+<a name="rfc.section.12"></a><h3>12.&nbsp;
 Activity Streams</h3>
 
 <p>Salmon is fully compatible with Activity Streams <a class='info' href='#AAE'>[AAE]<span> (</span><span class='info'>Atkins, M., Recordon, D., Messina, C., Keller, M., Steinberg, A., and R. Dolin, &ldquo;Atom Activity Extensions (Draft),&rdquo; .</span><span>)</span></a>
         Salmon MAY be activities, by having at least one activity:verb child
         element and one or more activity:object child elements.
         Salmon endpoints SHOULD accept appropriate activity verbs.  Salmon
-        endpoints MAY reject inappropriate activities.
-        [TODO: Should have some way to discover appropriate
-        activities prior to posting!].  Note that a Salmon endpoint which is not
+        endpoints MAY reject unsupported activities.
+        Note that a Salmon endpoint which is not
         aware of activity streams may simply accept and store (via the
         provenance element) the activity in question, but will treat it as a
         basic Atom entry.
 </p>
 <p>If an activity verb is included in a salmon reply, the 'Post' Verb is
-        the most appropriate generic verb to use.  Other verbs such as 'Like'
-        [TODO: Not in current AS spec, but in use] are possible and salmon
-        generators are encourage to use the most specific verb they can identify
+        the most appropriate generic verb to use.  Other verbs
+        are possible and salmon
+        generators SHOULD use the most specific verb they can identify
         for their use case.
 </p>
-<p>Nearly any activity verb could be included in a salmon mention
+<p>Nearly any activity verb could be appropriate for a salmon mention
         <a class='info' href='#SMLR'>Section&nbsp;3.3<span> (</span><span class='info'>Salmon Links for Mentions</span><span>)</span></a>.  The 'Post', 'Share', 'Save', and
         'Start Following'
         verbs <a class='info' href='#AABS'>[AABS]<span> (</span><span class='info'>Atkins, M., Recordon, D., Messina, C., Keller, M., Steinberg, A., and R. Dolin, &ldquo;Atom Activity Base Schema (Draft),&rdquo; .</span><span>)</span></a> are particularly pertinent and salmon
-        generators are encouraged to use the most specific verb they can
+        generators SHOULD use the most specific verb they can
         identify.
-</p>
-<p>[TODO: Activity Streams currently conflicts with the atom:author
-        specification and Salmon's use of the author:uri for signing and
-        provenance; we need to resolve this conflict in the AS spec.]
 </p>
 <a name="Acknowledgements"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
-<a name="rfc.section.12"></a><h3>12.&nbsp;
+<a name="rfc.section.13"></a><h3>13.&nbsp;
 Acknowledgements</h3>
 
-<p>TODO.
+<p>This document is the outcome of meetings and feedback from a large number of people.
+      In particular, feedback from the Federated Social Web, Webfinger, OAuth, Activity Streams,
+      and Salmon Protocol 
+      communities has been invaluable.  Some of the people who contributed
+      to this effort are:
+</p>
+<p>
+      Bob Aman,
+      Dirk Balfanz,
+      Darren Bounds,
+      Charlie Cauthen,
+      DeWitt Clinton,
+      George Fletcher,
+      Hunter Freyer,
+      Eran Hammer-Lahav,
+      Timothy Jordan,
+      Ben Laurie,
+      Mike Macgirvin,
+      James Manger,
+      Sean McCullough,
+      Breno de Medeiros,
+      Chris Messina,
+      Will Norris,
+      Ade Oshineye,
+      NeilFred Piccolo,
+      Evan Prodromou,
+      Arne Roomann-Kurrik,
+      Brett Slatkin,
+      Joseph Smarr,
+      James Snell,
+      Brian Stoler,
+      James Walker,
+      Stephen Paul Weber,
+      Bob Wyman.
+      
+</p>
+<p>The authors apologize for any omissions from this list, which are certainly unintentional.
 </p>
 <a name="IANA"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
-<a name="rfc.section.13"></a><h3>13.&nbsp;
+<a name="rfc.section.14"></a><h3>14.&nbsp;
 IANA Considerations</h3>
 
-<p>TODO
+<p>This document defines the new "salmon", "mentioned", "salmon-signer" link relations;
+      these values are registered via the procedures documented in <a class='info' href='#RFC5988'>RFC 5988<span> (</span><span class='info'>Nottingham, M., &ldquo;Web Linking,&rdquo; October&nbsp;2010.</span><span>)</span></a> [RFC5988].  Therefore, this document has no IANA actions.
 </p>
 <a name="Security"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
-<a name="rfc.section.14"></a><h3>14.&nbsp;
+<a name="rfc.section.15"></a><h3>15.&nbsp;
 Security Considerations</h3>
 
 <p>A primary concern with this type of distributed protocol is how to
@@ -831,8 +933,7 @@ Security Considerations</h3>
         URIs.  It also incorporates timestamps in the signed data.  Since
         POSTing a salmon to a Salmon endpoint is idempotent from a
         security point of
-        view, replay attacks can be categorized as [what's the correct term for
-        a DOS attack via legitimate but overwhelming traffic?].
+        view, replay attacks can be treated similarly to DOS attacks.
 </p>
 <p>Note that Salmon ties the salmon guid to the author identifier for
         purposes of updating, replacing, or de-duping content.  Thus, poisoning
@@ -845,7 +946,7 @@ Security Considerations</h3>
         published).  Salmon receivers should carefully consider the security
         implications of doing so for the content they are processing.
 </p>
-<p>Salmon depends on the Magic Signatures <a class='info' href='#MagicSig'>[MagicSig]<span> (</span><span class='info'>Panzer, J. and B. Laurie, &ldquo;Magic Signatures,&rdquo; .</span><span>)</span></a>
+<p>Salmon depends on the Magic Signatures <a class='info' href='#MagicSig'>[MagicSig]<span> (</span><span class='info'>Panzer, J., Laurie, B., and D. Balfanz, &ldquo;Magic Signatures,&rdquo; .</span><span>)</span></a>
         specification for its basic
         verification steps.  Beyond that, it is RECOMMENDED that salmon
         recipients utilize best current anti-abuse practices,
@@ -855,7 +956,7 @@ Security Considerations</h3>
 </p>
 <a name="rfc.references1"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
-<h3>15.&nbsp;Normative References</h3>
+<h3>16.&nbsp;Normative References</h3>
 <table width="99%" border="0">
 <tr><td class="author-text" valign="top"><a name="AABS">[AABS]</a></td>
 <td class="author-text">Atkins, M., Recordon, D., Messina, C., Keller, M., Steinberg, A., and R. Dolin, &ldquo;<a href="http://martin.atkins.me.uk/specs/activitystreams/activityschema">Atom Activity Base Schema (Draft)</a>.&rdquo;</td></tr>
@@ -866,13 +967,15 @@ Security Considerations</h3>
 <tr><td class="author-text" valign="top"><a name="LRDD">[LRDD]</a></td>
 <td class="author-text">Eran, E., &ldquo;<a href="http://tools.ietf.org/html/draft-hammer-discovery-04">LRDD: Link-based Resource Descriptor Discovery</a>.&rdquo;</td></tr>
 <tr><td class="author-text" valign="top"><a name="MagicSig">[MagicSig]</a></td>
-<td class="author-text">Panzer, J. and B. Laurie, &ldquo;<a href="http://salmon-protocol.googlecode.com/svn/trunk/draft-panzer-magicsig-00.html">Magic Signatures</a>.&rdquo;</td></tr>
+<td class="author-text">Panzer, J., Laurie, B., and D. Balfanz, &ldquo;<a href="http://salmon-protocol.googlecode.com/svn/trunk/draft-panzer-magicsig-01.html">Magic Signatures</a>.&rdquo;</td></tr>
 <tr><td class="author-text" valign="top"><a name="RFC2119">[RFC2119]</a></td>
 <td class="author-text"><a href="mailto:sob@harvard.edu">Bradner, S.</a>, &ldquo;<a href="http://tools.ietf.org/html/rfc2119">Key words for use in RFCs to Indicate Requirement Levels</a>,&rdquo; BCP&nbsp;14, RFC&nbsp;2119, March&nbsp;1997 (<a href="http://www.rfc-editor.org/rfc/rfc2119.txt">TXT</a>, <a href="http://xml.resource.org/public/rfc/html/rfc2119.html">HTML</a>, <a href="http://xml.resource.org/public/rfc/xml/rfc2119.xml">XML</a>).</td></tr>
 <tr><td class="author-text" valign="top"><a name="RFC4287">[RFC4287]</a></td>
 <td class="author-text"><a href="mailto:mnot@pobox.com">Nottingham, M., Ed.</a> and <a href="mailto:rfsayre@boswijck.com">R. Sayre, Ed.</a>, &ldquo;<a href="http://tools.ietf.org/html/rfc4287">The Atom Syndication Format</a>,&rdquo; RFC&nbsp;4287, December&nbsp;2005 (<a href="http://www.rfc-editor.org/rfc/rfc4287.txt">TXT</a>, <a href="http://xml.resource.org/public/rfc/html/rfc4287.html">HTML</a>, <a href="http://xml.resource.org/public/rfc/xml/rfc4287.xml">XML</a>).</td></tr>
 <tr><td class="author-text" valign="top"><a name="RFC4685">[RFC4685]</a></td>
 <td class="author-text">Snell, J., &ldquo;<a href="http://tools.ietf.org/html/rfc4685">Atom Threading Extensions</a>,&rdquo; RFC&nbsp;4685, September&nbsp;2006 (<a href="http://www.rfc-editor.org/rfc/rfc4685.txt">TXT</a>).</td></tr>
+<tr><td class="author-text" valign="top"><a name="RFC5988">[RFC5988]</a></td>
+<td class="author-text">Nottingham, M., &ldquo;<a href="http://tools.ietf.org/html/rfc5988">Web Linking</a>,&rdquo; RFC&nbsp;5988, October&nbsp;2010 (<a href="http://www.rfc-editor.org/rfc/rfc5988.txt">TXT</a>).</td></tr>
 <tr><td class="author-text" valign="top"><a name="Tombstones">[Tombstones]</a></td>
 <td class="author-text">Snell, J., &ldquo;<a href="http://tools.ietf.org/id/draft-snell-atompub-tombstones-06.txt">The Atom "deleted-entry" Element</a>.&rdquo;</td></tr>
 <tr><td class="author-text" valign="top"><a name="WebLinking">[WebLinking]</a></td>
@@ -884,13 +987,12 @@ Security Considerations</h3>
             13</a>.&rdquo;</td></tr>
 </table>
 
-<a name="anchor5"></a><br /><hr />
+<a name="anchor7"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="TOCbug" align="right"><tr><td class="TOCbug"><a href="#toc">&nbsp;TOC&nbsp;</a></td></tr></table>
 <a name="rfc.section.A"></a><h3>Appendix A.&nbsp;
 Specification Feedback</h3>
 
-<p>The primary driver of this specification is the Salmon protocol.
-        Feedback on this specification is thus welcomed via the salmon-discuss
+<p>Feedback on this specification is thus welcomed via the salmon
         mailing list, salmon-protocol@googlegroups.com.  For more information,
         see <a href='http://groups.google.com/group/salmon-protocol'>the Salmon discussion group</a>.
 </p>
