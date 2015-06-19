@@ -1,0 +1,1 @@
+OBSOLETE; replaced by Magic Signatures specification.
